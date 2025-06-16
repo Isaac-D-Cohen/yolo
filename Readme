@@ -1,0 +1,7 @@
+This code is an adaptation of an implementation of YOLOv3 by Aladdin Persson.
+
+Checkout Aladdin's video for a good
+explanation of the code:
+https://youtu.be/Grir6TZbc1M?si=OfYivJUzfwI2PBiE
+
+Throughout this code the comments may use regular YOLO terminology, like referring to "bounding boxes." I know that a 1-d line is not a box, but calling them "bounding lines" would probably just make things more confusing.
