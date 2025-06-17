@@ -209,7 +209,6 @@ class YOLODataset(Dataset):
 
 
 def test():
-    anchors = config.ANCHORS
 
     # transform = None
 
@@ -218,7 +217,7 @@ def test():
     dataset = YOLODataset(
         "images/",
         "labels/",
-        anchors=anchors,
+        anchors=config.ANCHORS,
         S=S,
     )
 

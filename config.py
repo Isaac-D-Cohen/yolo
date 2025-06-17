@@ -1,8 +1,19 @@
+import torch
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+BATCH_SIZE = 32
+LEARNING_RATE = 1e-3
+WEIGHT_DECAY = 1e-4
+NUM_EPOCHS = 100
 
 
-CLASSES = ["NOCA"]
+CLASSES = ["NOCA",
+           "Person"]
 NUM_CLASSES=len(CLASSES)
+IN_CHANNELS = 128
 
+S = [13, 26, 52]
 
 # Got these anchors from the k_means script
 # They represent widths that are scaled to be

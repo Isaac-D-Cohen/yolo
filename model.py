@@ -88,7 +88,7 @@ class ScalePrediction(nn.Module):
         self.pred = nn.Sequential(
             CNNBlock(in_channels, 2 * in_channels, kernel_size=3, padding=1),
             CNNBlock(
-                2 * in_channels, (num_classes + 5) * 3, bn_act=False, kernel_size=1
+                2 * in_channels, (num_classes + 3) * 3, bn_act=False, kernel_size=1
             ),
         )
         self.num_classes = num_classes
@@ -97,7 +97,7 @@ class ScalePrediction(nn.Module):
         return (
             self.pred(x)
             # reshape to [batch_size, num_anchors_per_scale, width (length) of image]
-            .reshape(x.shape[0], 3, self.num_classes + 5, x.shape[2])
+            .reshape(x.shape[0], 3, self.num_classes + 3, x.shape[2])
             .permute(0, 1, 3, 2)
         )
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     model = YOLOv3(in_channels=128, num_classes=num_classes)
     x = torch.randn((2, 128, IMAGE_SIZE))
     out = model(x)
-    assert model(x)[0].shape == (2, 3, IMAGE_SIZE//32, num_classes + 5)
-    assert model(x)[1].shape == (2, 3, IMAGE_SIZE//16, num_classes + 5)
-    assert model(x)[2].shape == (2, 3, IMAGE_SIZE//8, num_classes + 5)
+    assert model(x)[0].shape == (2, 3, IMAGE_SIZE//32, num_classes + 3)
+    assert model(x)[1].shape == (2, 3, IMAGE_SIZE//16, num_classes + 3)
+    assert model(x)[2].shape == (2, 3, IMAGE_SIZE//8, num_classes + 3)
     print("Success!")

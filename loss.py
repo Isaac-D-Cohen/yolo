@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 
+from utils import intersection_over_union
+
 class YoloLoss(nn.Module):
     def __init__(self):
         super().__init__()
@@ -25,31 +27,62 @@ class YoloLoss(nn.Module):
         obj = target[..., 0] == 1
         noobj = target[..., 0] == 0
 
-        # loss for when the network predicted an object and there is no object
+        # loss for when there is no object, but the network predicted one
         no_object_loss = self.bce(
             (predictions[..., 0][noobj]), (target[..., 0][noobj]),
         )
 
-        # for object loss
-        anchors = anchors.reshape(1, 3, 1, 1, 2)
-        box_preds = torch.cat([self.sigmoid(predictions[..., 1:3]), torch.exp(predictions[..., 3:5]) * anchors], dim=-1)
-        ious = intersection_over_union(box_preds[obj], target[..., 1:5][obj]).detach()
+        # now, there's a special case where there might not be any objects at all
+        # if so, we already covered all bases and can return the loss now
+        if not torch.any(obj):
+            return self.lambda_noobj * no_object_loss
+
+        # ok, in the next two sections we're going to need the x center predictions
+        # so let's sigmoid them now. The reason we sigmoid in the first place is to keep them in range [0, 1]
+        predictions[..., 1] = self.sigmoid(predictions[..., 1])
+
+        # loss for when there is an object but the network predicted the wrong iou
+        # that is, it put the box somewhere and gave an iou for its box and the real one
+        # but, the iou of its box and the actual one is not equal to its predicted iou
+        # so either change your coordinates or change your iou estimate!
+        # (in the next section we will specifically correct the box position and size, so ideally the iou should tend towards 1)
+
+        # so first we reshape the anchors to match the number of dimensions in our predictions tensor
+        # new shape = [batch, num_anchors, cells (or x, width, whatever), prediction_values]
+        anchors = anchors.reshape(1, 3, 1, 1)
+
+
+        # then we concatenate the predictions for x_center with the predictions for width to get
+        # predictions for the lines. The exponent stuff is just how the YOLO paper said to do things
+        line_preds = torch.cat([predictions[..., 1:2], torch.exp(predictions[..., 2:3]) * anchors], dim=-1)
+
+        # now let's get the IOUs between our line predictions and the lines we have in target
+        # we detatch just in case having the gradients flow through the IOUs messes things up
+        ious = intersection_over_union(line_preds[obj], target[..., 1:3][obj]).detach()
+
+        # finally, we compute the loss for this part by comparing our IOU predicitons to the actual IOUs
+        # as derived from our predicted lines and the ground truth lines
+        # this error is how far off our IOUs predictions were given our x and width predictions and the ground truth
         object_loss = self.mse(self.sigmoid(predictions[..., 0:1][obj]), ious * target[..., 0:1][obj])
 
-        # ======================== #
-        #   FOR BOX COORDINATES    #
-        # ======================== #
 
-        predictions[..., 1:3] = self.sigmoid(predictions[..., 1:3])  # x,y coordinates
-        target[..., 3:5] = torch.log(
-            (1e-16 + target[..., 3:5] / anchors)
-        )  # width, height coordinates
-        box_loss = self.mse(predictions[..., 1:5][obj], target[..., 1:5][obj])
+        # loss for when there is an object and the network predicted it
+        # but put it in the wrong place
 
-        # ================== #
-        #   FOR CLASS LOSS   #
-        # ================== #
+        # to improve gradient flow stuff, we transform the targets to match the predictions format
+        # instead of the other way around. So this log thing of the width in target is the inverse
+        # of the exponent thing on the width predictions above
+        target[..., 2:3] = torch.log(
+            (1e-16 + target[..., 2:3] / anchors)
+        )
 
+        # print(predictions[..., 1:3][obj].shape)
+        # print(target[..., 1:3][obj].shape)
+
+        # compute the loss for this part by comparing our predictions for x and width to targets
+        box_loss = self.mse(predictions[..., 1:3][obj], target[..., 1:3][obj])
+
+        # finally, loss for when there is an object and the network predicted it, but it got the class wrong
         class_loss = self.entropy(
             (predictions[..., 3:][obj]), (target[..., 3][obj].long()),
         )
