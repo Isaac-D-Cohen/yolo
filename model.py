@@ -96,7 +96,7 @@ class ScalePrediction(nn.Module):
     def forward(self, x):
         return (
             self.pred(x)
-            # reshape to [batch_size, num_anchors_per_scale, width (length) of image]
+            # reshape to [batch_size, num_anchors_per_scale, predictions, width (length) of image]
             .reshape(x.shape[0], 3, self.num_classes + 3, x.shape[2])
             .permute(0, 1, 3, 2)
         )

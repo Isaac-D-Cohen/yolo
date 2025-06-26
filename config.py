@@ -7,9 +7,13 @@ LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
 NUM_EPOCHS = 100
 
+# for nms
+PROBABILITY_THRESHOLD = .00
+IOU_THRESHOLD = 0.85
 
-CLASSES = ["NOCA",
-           "Person"]
+
+CLASSES = ["call",
+           "song"]
 NUM_CLASSES=len(CLASSES)
 IN_CHANNELS = 128
 

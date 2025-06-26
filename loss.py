@@ -14,9 +14,9 @@ class YoloLoss(nn.Module):
 
         # Constants to weigh different parts of the loss differently
         self.lambda_class = 1
-        self.lambda_noobj = 10
+        self.lambda_noobj = 1
         self.lambda_obj = 1
-        self.lambda_box = 10
+        self.lambda_box = 1
 
     def forward(self, predictions, target, anchors):
         # We make two tensors of true/false values marking which anchors
@@ -75,9 +75,6 @@ class YoloLoss(nn.Module):
         target[..., 2:3] = torch.log(
             (1e-16 + target[..., 2:3] / anchors)
         )
-
-        # print(predictions[..., 1:3][obj].shape)
-        # print(target[..., 1:3][obj].shape)
 
         # compute the loss for this part by comparing our predictions for x and width to targets
         box_loss = self.mse(predictions[..., 1:3][obj], target[..., 1:3][obj])

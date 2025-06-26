@@ -9,7 +9,7 @@ import numpy as np
 
 from torch.utils.data import Dataset, DataLoader
 
-from utils import iou_length as iou
+from utils import iou_length as iou, write_predictions
 
 class YOLODataset(Dataset):
     def __init__(
@@ -19,7 +19,6 @@ class YOLODataset(Dataset):
         anchors,
         S=[13, 26, 52],
         image_size=416,
-        transform=None,
     ):
 
         self.img_dir = img_dir
@@ -29,7 +28,6 @@ class YOLODataset(Dataset):
 
         # TODO take these out if we decide not to do augmentations here
         self.image_size = image_size
-        self.transform = transform
 
         self.S = S
 
@@ -77,13 +75,6 @@ class YOLODataset(Dataset):
             return_early = False    # if we have labels we have to prepare representations of them in our y tensor
         else:
             return_early = True     # our job in this function will be much shorter
-
-
-        # TODO we might want to do augmentations here
-        # we would need to figure out how to do it for mel spectrograms
-        # probably not difficult
-        if self.transform:
-            pass
 
 
         # Now we have our spectrogram and its labels. But the labels are in the YOLO input format.
@@ -163,7 +154,7 @@ class YOLODataset(Dataset):
 
                     # now we need to find where the center of where our object falls within this grid cell on the image.
                     # So picture the full image and divide it into S segments. If our object is in segment 6 and 0.25
-                    # way through, we want 6.25
+                    # way through, then S*x will give us 6.25, and we can subtract j (6) to get 0.25
                     x_cell = S * x - j
 
                     # find the width
@@ -210,9 +201,13 @@ class YOLODataset(Dataset):
 
 def test():
 
-    # transform = None
+    S = config.S
+    anchors = config.ANCHORS
 
-    S = [13, 26, 52]
+    scaled_anchors = (
+        torch.tensor(anchors)
+        * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
+    ).to(config.DEVICE)
 
     dataset = YOLODataset(
         "images/",
@@ -221,7 +216,7 @@ def test():
         S=S,
     )
 
-    loader = DataLoader(dataset=dataset, batch_size=65, shuffle=True)
+    loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE, shuffle=True)
 
     for batch in loader:
 
@@ -229,10 +224,16 @@ def test():
         y = batch["labels"]
         idx = batch["idx"]
 
-        print(x.shape)
-        print(len(y))
-        print(y[0].shape)
-        print(f"Idx = {idx}")
+        clip_nums = []
+        for i in idx:
+            clip_nums.append(dataset.get_spect_number(i))
+
+        # print(x.shape)
+        # print(len(y))
+        # print(y[0].shape)
+        # print(f"Idx = {idx}")
+
+        write_predictions(list(y), scaled_anchors, clip_nums, is_preds=False)
 
 
 if __name__ == "__main__":
