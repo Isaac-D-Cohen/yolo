@@ -1,5 +1,6 @@
 import torch
 import config
+import os
 
 # takes two tensors with the lengths of lines
 # returns a tensor of IOUs of the lines
@@ -102,9 +103,9 @@ def format_output(bboxes, clip_num):
 # predictions is a list of tensors each holding the outputs for an entire batch for one scale
 # shape of each item in the list is [batch_size, anchors_per_scale, S, 3+C]
 # anchors is a tensor containing the anchors for each scale. shape is [num_scales, anchors_per_scale]
-# clip_nums is a list of the id numbers of the spectrograms in this batch
-# (you can get this info from the dataset with dataset.get_spect_number())
-def write_predictions(predictions, scaled_anchors, clip_nums, is_preds=True):
+# spec_names is a list of the names of the spectrograms in this batch
+# (you can get this info from the dataset with dataset.get_spect_name())
+def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
 
     batch_size = predictions[0].shape[0]
     anchors_per_scale = scaled_anchors.shape[1]
@@ -160,6 +161,7 @@ def write_predictions(predictions, scaled_anchors, clip_nums, is_preds=True):
                         # record in the list for this clip (that's what bboxes[i] indexes)
                         bboxes[i].append([class_label, confidence_x_iou, x_center, width])
 
+    outputs_dir = "outputs"
     # ok, now it's time to remove all the extra bounding boxes with non maximal suppression
     # and record the remaining ones in txt files
     # remember that bboxes has shape [batch_size, detections_in_this_clip, 4]
@@ -168,7 +170,8 @@ def write_predictions(predictions, scaled_anchors, clip_nums, is_preds=True):
         final_boxes = format_output(non_max_suppression(bboxes[i]), clip_nums[i])
 
         # and now we record our results
-        with open(f"outputs/{clip_nums[i]}.txt", "w") as f:
+        filename = os.path.join(outputs_dir, spec_names[i] + '.txt')
+        with open(filename, "w") as f:
             for box in final_boxes:
                 line = " ".join([str(item) for item in box])
                 f.write(line)

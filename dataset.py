@@ -54,9 +54,6 @@ class YOLODataset(Dataset):
     # access to that, we will also return the index
     def __getitem__(self, index):
 
-        # get the number of the spectrogram we will load
-        spect_number = self._get_spect_number(self.image_filenames[index])
-
         # get the path
         img_path = os.path.join(self.img_dir, self.image_filenames[index])
 
@@ -64,8 +61,8 @@ class YOLODataset(Dataset):
         image = torch.load(img_path, weights_only=True)
 
         # see if we have labels for this image
-        # TODO this might have to be changed if change our naming convention for labels
-        label_path = os.path.join(self.label_dir, f"{spect_number}.txt")
+        label_filename = self.image_filenames[index][:-2] + 'txt'
+        label_path = os.path.join(self.label_dir, label_filename)
 
         if os.path.isfile(label_path):
             # load the labels
@@ -183,20 +180,12 @@ class YOLODataset(Dataset):
         return {'img': image, 'labels': tuple(targets), 'idx': index}
 
 
-    # This function is for when we actually use the network in real life.
-    # We will want to output a Raven annotations file with the timestamps
-    # in absolute format (within the whole audio file). So this function will
-    # give us the number of the current spectrogram segment (from which we can figure
-    # out where we are in the audio)
-    def get_spect_number(self, index):
-        return self._get_spect_number(self.image_filenames[index])
-
-    # TODO we might need to change this if our filenames become more complicated than just <number>.pt
-    def _get_spect_number(self, img_filename):
-        return int(img_filename.split('.')[0])
-
-
-
+    # Calling this function will give you the name of
+    # a spectrogram file (without the .pt) for a given index
+    def get_spect_name(self, index):
+        img_filename = self.image_filenames[index]
+        # chop off the .pt
+        return img_filename[:-2]
 
 
 def test():
@@ -224,16 +213,16 @@ def test():
         y = batch["labels"]
         idx = batch["idx"]
 
-        clip_nums = []
+        spec_names = []
         for i in idx:
-            clip_nums.append(dataset.get_spect_number(i))
+            spec_names.append(dataset.get_spect_name(i))
 
         # print(x.shape)
         # print(len(y))
         # print(y[0].shape)
         # print(f"Idx = {idx}")
 
-        write_predictions(list(y), scaled_anchors, clip_nums, is_preds=False)
+        write_predictions(list(y), scaled_anchors, spec_names, is_preds=False)
 
 
 if __name__ == "__main__":

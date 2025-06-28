@@ -2,6 +2,15 @@ import torch
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+# for spectrograms
+CLIP_LEN = 10   # length of a clip in seconds
+OVERLAP = 5     # overlap between clips
+# for fft and mel transform
+WIN_LENGTH = 2048
+HOP_LENGTH = 512
+N_FFT = 2048
+N_MELS = 128
+
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
