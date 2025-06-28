@@ -68,10 +68,12 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
         print(f"Loss: {loss.detach()}")
 
 
-if __name__ == "__main__":
+
+def main():
 
     anchors = config.ANCHORS
 
+    checkpoint_filename = "checkpoints/checkpoint8.pth.tar"
     datadir = "data"
 
     images_dir = os.path.join(datadir, "images")
@@ -84,8 +86,6 @@ if __name__ == "__main__":
         S=config.S,
     )
 
-    train_set, eval_set = random_split(dataset, [0.95, 0.05])
-
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
     loss_fn = YoloLoss()
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
     )
 
-    # load_checkpoint(filename="checkpoints/checkpoint5.pth.tar", model=model, optimizer=optimizer)
+    load_checkpoint(filename=checkpoint_filename, model=model, optimizer=optimizer)
 
     # for m in model.modules():
     #     if isinstance(m, torch.nn.BatchNorm1d):
@@ -107,12 +107,10 @@ if __name__ == "__main__":
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    for major_epoch in range(14):
-        for _ in range(10):
-            train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True)
 
-        train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False)
-    train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True)
+    train_model(model, dataset, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True)
 
-    save_checkpoint(model, optimizer, filename="checkpoints/checkpoint9.pth.tar")
 
+
+if __name__ == "__main__":
+    main()
