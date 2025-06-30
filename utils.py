@@ -82,7 +82,14 @@ def non_max_suppression(bboxes):
     return bboxes_after_nms
 
 
-def format_output(bboxes, clip_num):
+def get_spec_number(spec_name):
+    index_before_number = spec_name.rfind('_')
+    return int(spec_name[index_before_number+1:])
+
+
+def format_output(bboxes, spec_name):
+
+    clip_num = get_spec_number(spec_name)
 
     final_boxes = []
 
@@ -167,7 +174,7 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
     # remember that bboxes has shape [batch_size, detections_in_this_clip, 4]
     for i in range(batch_size):
         # apple non maximal suppression and format for output
-        final_boxes = format_output(non_max_suppression(bboxes[i]), clip_nums[i])
+        final_boxes = format_output(non_max_suppression(bboxes[i]), spec_names[i])
 
         # and now we record our results
         filename = os.path.join(outputs_dir, spec_names[i] + '.txt')
@@ -188,11 +195,12 @@ def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar"):
     torch.save(checkpoint, filename)
 
 
-def load_checkpoint(filename, model, optimizer):
+def load_checkpoint(filename, model, optimizer=None):
     print("=> Loading checkpoint")
     checkpoint = torch.load(filename, map_location=config.DEVICE)
     model.load_state_dict(checkpoint["state_dict"])
-    optimizer.load_state_dict(checkpoint["optimizer"])
+    if optimizer != None:
+        optimizer.load_state_dict(checkpoint["optimizer"])
 
     # If we don't do this then it will just have learning rate of old checkpoint
     # and it will lead to many hours of debugging \:

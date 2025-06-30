@@ -18,16 +18,12 @@ class YOLODataset(Dataset):
         label_dir,
         anchors,
         S=[13, 26, 52],
-        image_size=416,
     ):
 
         self.img_dir = img_dir
         self.label_dir = label_dir
 
         self.image_filenames = os.listdir(img_dir)
-
-        # TODO take these out if we decide not to do augmentations here
-        self.image_size = image_size
 
         self.S = S
 
@@ -61,7 +57,7 @@ class YOLODataset(Dataset):
         image = torch.load(img_path, weights_only=True)
 
         # see if we have labels for this image
-        label_filename = self.image_filenames[index][:-2] + 'txt'
+        label_filename = self.image_filenames[index][:-2] + '.txt'
         label_path = os.path.join(self.label_dir, label_filename)
 
         if os.path.isfile(label_path):
@@ -185,7 +181,7 @@ class YOLODataset(Dataset):
     def get_spect_name(self, index):
         img_filename = self.image_filenames[index]
         # chop off the .pt
-        return img_filename[:-2]
+        return img_filename[:-3]
 
 
 def test():

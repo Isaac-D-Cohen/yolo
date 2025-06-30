@@ -56,11 +56,11 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
             optimizer.zero_grad()
         elif output_preds:
             idx = batch["idx"]
-            clip_nums = []
+            spec_names = []
             for i in idx:
-                clip_nums.append(dataset.get_spect_number(i))
+                spec_names.append(dataset.get_spect_name(i))
 
-            write_predictions(out, scaled_anchors, clip_nums)
+            write_predictions(out, scaled_anchors, spec_names)
             # for m in model.modules():
             #     if isinstance(m, torch.nn.BatchNorm1d):
             #         print(m.running_mean.mean().item(), m.running_var.mean().item())
