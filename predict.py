@@ -35,7 +35,17 @@ class InputDataset(Dataset):
 
 
 
+def clear_outputs():
+
+    output_dir = "outputs"
+
+    for filename in os.listdir(output_dir):
+        p = os.path.join(output_dir, filename)
+        os.remove(p)
+
 def main():
+
+    clear_outputs()
 
     torch.autograd.set_grad_enabled(False)
 
@@ -53,6 +63,7 @@ def main():
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
     load_checkpoint(filename=checkpoint_filename, model=model)
+    model.eval()
 
 
     for spectrogram_batch in tqdm(loader):
