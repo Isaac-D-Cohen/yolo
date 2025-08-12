@@ -12,15 +12,23 @@ from math import floor
 import os
 
 """
-This script takes a mode - either train or infer - and a list of file names.
-The names should all correspond to .wav audio files. The files will each be chopped into
-spectrograms. In inference mode the spectrograms all go in a folder called 'input'. In train mode
-each file should also have a corresponding annotations file in Raven format with the same name
-but the .txt extension. Then the spectrograms and labels will go in subfolders called images and labels
-within a data folder.
+This script takes a mode - either train or infer - and a directory name. A directory with this
+name should exist in audio/ and maybe annotations/ too. The one in audio/ should contain .wav files;
+the one in annotations/ - if it exists - should have .txt files with corresponding names, each having
+the Raven annotations for the audio file with its name. The clips will each be chopped into spectrograms.
+In inference mode the spectrograms all go in a folder called 'input' and we don't need the annotations.
+In train mode, the script will additionally create YOLO style labels from the annotation files and then put
+the spectrograms in data/images and the labels in data/labels.
 
 Note: This code is largely based on the spectrograms notebook.
 """
+
+def ensure_dirs_exist(tuple_of_dir_names):
+
+    for dir_name in tuple_of_dir_names:
+        if not os.path.isdir(dir_name):
+            print(f"Error: {dir_name} doesn't exist.")
+            exit(1)
 
 # read a Raven annotations file into a list of lists where each inner list
 # represents a box and is in the format [class, begin, end]
@@ -43,17 +51,42 @@ def read_annotations_file(annotations_filename):
     return annotations
 
 
-def make_spectrograms(audio_name, clip_len, step):
+def make_spectrograms(audio_filename, clip_len, step):
 
-    sound_filename = audio_name + '.wav'
+    waveform, sample_rate = torchaudio.load(audio_filename)
 
-    waveform, sample_rate = torchaudio.load(sound_filename)
+    # if this sound file is stereo, drop one channel
+    if waveform.shape[0] == 2:
+        waveform = waveform[0:1,:]
+
+    samples_per_clip = clip_len*sample_rate
+
+    # is this sound file under the length of one clip (10 seconds)?
+    # how many samples short are we?
+    samples_short = samples_per_clip - waveform.shape[1]
+
+    # if we are under 10 seconds, add some silence as filler
+    if samples_short > 0:
+        silence_tensor = torch.zeroes(samples_short)
+        waveform = torch.cat((waveform, silence_tensor), dim=1)
+
 
     # waveform has shape [1, samples]
     # here we split into clips of the specified length with the specified overlap
-    w = waveform.unfold(dimension=1, size=clip_len*sample_rate, step=step*sample_rate)
+    w = waveform.unfold(dimension=1, size=samples_per_clip, step=step*sample_rate)
     # move number of clips to first dimension
     w = torch.transpose(w, 0, 1)
+
+    # we probably have some residual samples that didn't make it into any window
+    num_clips = w.shape[0]
+    end_of_last_clip = (num_clips-1)*step + samples_per_clip
+    residual = waveform.shape[1] - end_of_last_clip
+
+    if residual > 0:
+        new_last_clip = waveform[0,-samples_per_clip:]
+        new_last_clip = new_last_clip.view(1, 1, -1)
+        w = torch.cat((w, new_last_clip), dim=0)
+
 
     # prepare our mel transform
     win_length = config.WIN_LENGTH
@@ -115,9 +148,8 @@ def insert_box(yolo_box_map, clip_num, annotation, clip_len, step):
         yolo_box_map[clip_num] = [yolo_box]
 
 # function to produce labels
-def make_labels(audio_name, clip_len, step):
+def make_labels(annotations_filename, clip_len, step):
 
-    annotations_filename = audio_name + '.txt'
     annotations = read_annotations_file(annotations_filename)
 
     yolo_box_map = dict()    # a hashmap
@@ -138,8 +170,8 @@ def make_labels(audio_name, clip_len, step):
 
 def main():
 
-    if len(argv) < 2:
-        print(f"Format: {argv[0]}  <mode: either 'train' or 'infer'>  <file1>  <file2>...")
+    if len(argv) < 3:
+        print(f"Format: {argv[0]}  <mode: either 'train' or 'infer'>  <directory with files>...")
         exit(0)
 
     if argv[1] == "train":
@@ -154,18 +186,31 @@ def main():
     overlap = config.OVERLAP
     step = clip_len-overlap
 
+    images_src = os.path.join("audio", argv[2])
+    ensure_dirs_exist((images_src,))
+
     if train_mode:
-        images_dir = os.path.join("data", "images")
-        labels_dir = os.path.join("data", "labels")
+        labels_src = os.path.join("annotations", argv[2])
+        images_dest = os.path.join("data", "images")
+        labels_dest = os.path.join("data", "labels")
+        ensure_dirs_exist((labels_src, images_dest, labels_dest))
     else:
-        images_dir = "inputs"
+        images_dest = "inputs"
+        ensure_dirs_exist((images_dest,))
 
-    for arg in argv[2:]:
+    wav_files = os.listdir(images_src)
 
-        spectrograms = make_spectrograms(arg, clip_len, step)
+    for wav_basename in wav_files:
+
+        wav_name = os.path.join(images_src, wav_basename)
+        spectrograms = make_spectrograms(wav_name, clip_len, step)
+
+        # remove the .wav
+        sound_name = wav_basename[:-4]
 
         if train_mode:
-            yolo_box_map = make_labels(arg, clip_len, step)
+            annotations_filename = os.path.join(labels_src, sound_name + '.txt')
+            yolo_box_map = make_labels(annotations_filename, clip_len, step)
 
         for i in range(len(spectrograms)):
 
@@ -175,7 +220,7 @@ def main():
             spectrogram = spectrogram.view(128, 416)
 
             # save the tensor
-            filename = os.path.join(images_dir, arg + f"_{i}.pt")
+            filename = os.path.join(images_dest, sound_name + f"_{i}.pt")
             torch.save(spectrogram, filename)
 
             # if we're in train mode and we have labels for this clip
@@ -184,7 +229,7 @@ def main():
                 # save the bounding boxes
                 boxes = yolo_box_map[i]
 
-                filename = os.path.join(labels_dir, arg + f"_{i}.txt")
+                filename = os.path.join(labels_dest, sound_name + f"_{i}.txt")
                 with open(filename, "w") as f:
                     for box in boxes:
                         f.write(f"{box[0]} {box[1]} {box[2]}\n")
