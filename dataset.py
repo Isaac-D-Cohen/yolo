@@ -57,7 +57,7 @@ class YOLODataset(Dataset):
         image = torch.load(img_path, weights_only=True)
 
         # see if we have labels for this image
-        label_filename = self.image_filenames[index][:-2] + '.txt'
+        label_filename = self.image_filenames[index][:-2] + 'txt'
         label_path = os.path.join(self.label_dir, label_filename)
 
         if os.path.isfile(label_path):
