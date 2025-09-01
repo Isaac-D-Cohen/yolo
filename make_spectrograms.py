@@ -79,7 +79,8 @@ def make_spectrograms(audio_filename, clip_len, step):
 
     # we probably have some residual samples that didn't make it into any window
     num_clips = w.shape[0]
-    end_of_last_clip = (num_clips-1)*step + samples_per_clip
+    # clip_len seconds for the first clip, and then 'step' seconds for the remaining ones
+    end_of_last_clip = (clip_len + (num_clips-1)*step)*sample_rate
     residual = waveform.shape[1] - end_of_last_clip
 
     if residual > 0:
