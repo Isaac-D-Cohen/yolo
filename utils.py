@@ -186,18 +186,18 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
 
 
 # TODO Maybe modify these functions a bit
-def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar"):
-    print("=> Saving checkpoint")
+def save_checkpoint(checkpoint_name, model, optimizer):
+    print(f"=> Saving {checkpoint_name}")
     checkpoint = {
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
     }
-    torch.save(checkpoint, filename)
+    torch.save(f"checkpoints/{checkpoint_name}.pth.tar", filename)
 
 
-def load_checkpoint(filename, model, optimizer=None):
-    print("=> Loading checkpoint")
-    checkpoint = torch.load(filename, map_location=config.DEVICE)
+def load_checkpoint(checkpoint_name, model, optimizer=None):
+    print(f"=> Loading {checkpoint_name}")
+    checkpoint = torch.load(f"checkpoints/{checkpoint_name}.pth.tar", map_location=config.DEVICE)
     model.load_state_dict(checkpoint["state_dict"])
     if optimizer != None:
         optimizer.load_state_dict(checkpoint["optimizer"])

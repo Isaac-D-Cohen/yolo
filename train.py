@@ -111,7 +111,9 @@ if __name__ == "__main__":
         model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
     )
 
-    # load_checkpoint(filename="checkpoints/checkpoint5.pth.tar", model=model, optimizer=optimizer)
+    checkpoint_name = "checkpoint16"
+
+    # load_checkpoint(checkpoint_name, model=model)
 
     # for m in model.modules():
     #     if isinstance(m, torch.nn.BatchNorm1d):
@@ -131,5 +133,5 @@ if __name__ == "__main__":
 
     train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True)
 
-    save_checkpoint(model, optimizer, filename="checkpoints/checkpoint16.pth.tar")
+    save_checkpoint(checkpoint_name, model, optimizer)
 

@@ -56,13 +56,13 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    checkpoint_filename = "checkpoints/checkpoint8.pth.tar"
+    checkpoint_name = "checkpoint15"
 
     dataset = InputDataset()
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
-    load_checkpoint(filename=checkpoint_filename, model=model)
+    load_checkpoint(checkpoint_name, model=model)
     model.eval()
 
 
