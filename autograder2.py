@@ -106,8 +106,17 @@ def main():
         num_gt, num_pred = sum(gt_mask), sum(mo_mask)
 
         print(f"Class: {class_name}")
-        print(f"{n1}/{num_pred} of the model's predictions were in ground truth data, or precision = {n1/num_pred*100}%")
-        print(f"{n2}/{num_gt} of the ground truth boxes were picked up by the model, or recall = {n2/num_gt*100}%")
+
+        if num_pred != 0:
+            print(f"{n1}/{num_pred} of the model's predictions were in ground truth data, or precision = {n1/num_pred*100}%")
+        else:
+            print("Model predicted no boxes, so precision is undefined.")
+
+        if num_gt != 0:
+            print(f"{n2}/{num_gt} of the ground truth boxes were picked up by the model, or recall = {n2/num_gt*100}%")
+        else:
+            print("There were no ground truth boxes in these audio clips, so recall is undefined.")
+
         print()
 
         total_n1 += n1
