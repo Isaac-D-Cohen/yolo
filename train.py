@@ -13,6 +13,19 @@ from loss import YoloLoss
 from utils import write_predictions, save_checkpoint, load_checkpoint
 
 
+def save_set_names(subset, filename):
+
+    with open(filename, "w") as f:
+        loader = DataLoader(dataset=subset, batch_size=1, shuffle=False)
+
+        for spect in loader:
+            idx = spect["idx"]
+            spec_names = []
+            for i in idx:
+                spec_names.append(dataset.get_spect_name(i))
+                f.write(f"{spec_names[0]}.pt\n")
+
+
 # does both training and eval
 def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, training_mode, output_preds=False):
 
@@ -84,7 +97,11 @@ if __name__ == "__main__":
         S=config.S,
     )
 
-    train_set, eval_set = random_split(dataset, [0.95, 0.05])
+    train_set, eval_set = random_split(dataset, [0.90, 0.1])
+
+
+    save_set_names(train_set, "train_set.txt")
+    save_set_names(eval_set, "eval_set.txt")
 
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
@@ -107,12 +124,12 @@ if __name__ == "__main__":
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    for major_epoch in range(14):
+    for major_epoch in range(4):
         for _ in range(10):
             train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True)
-
         train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False)
+
     train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True)
 
-    save_checkpoint(model, optimizer, filename="checkpoints/checkpoint9.pth.tar")
+    save_checkpoint(model, optimizer, filename="checkpoints/checkpoint16.pth.tar")
 
