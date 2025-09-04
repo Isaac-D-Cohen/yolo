@@ -1,0 +1,8 @@
+#!/bin/bash
+
+while IFS= read -r line; do
+    mv "$1/$line" "$2/$line"
+
+done < "$3"
+
+# format: ./script <src_folder> <dest_folder> <file_with_names_of_files_to_move>
