@@ -87,26 +87,6 @@ def get_spec_number(spec_name):
     return int(spec_name[index_before_number+1:])
 
 
-def format_output(bboxes, spec_name):
-
-    clip_num = get_spec_number(spec_name)
-
-    final_boxes = []
-
-    for box in bboxes:
-        class_label, confidence_x_iou, x_center, width = box
-
-        x_begin = x_center - width/2
-        x_begin, width = x_begin*10+clip_num*5, width*10
-        x_end = x_begin+width
-
-        final_boxes.append([class_label, confidence_x_iou, x_begin, x_end, width])
-
-    final_boxes.sort(key=lambda box: box[2])
-
-    return final_boxes
-
-
 # predictions is a list of tensors each holding the outputs for an entire batch for one scale
 # shape of each item in the list is [batch_size, anchors_per_scale, S, 3+C]
 # anchors is a tensor containing the anchors for each scale. shape is [num_scales, anchors_per_scale]
@@ -172,11 +152,26 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
     # ok, now it's time to remove all the extra bounding boxes with non maximal suppression
     # and record the remaining ones in txt files
     # remember that bboxes has shape [batch_size, detections_in_this_clip, 4]
-    for i in range(batch_size):
-        # apple non maximal suppression and format for output
-        final_boxes = format_output(non_max_suppression(bboxes[i]), spec_names[i])
+    # and the 4 features are: class, confidence, x_center, width
 
-        # and now we record our results
+    clip_len = config.CLIP_LEN
+    overlap = config.OVERLAP
+
+    for i in range(batch_size):
+        # perform non maximal suppression
+        final_boxes = non_max_suppression(bboxes[i])
+
+        clip_num = get_spec_number(spec_names[i])
+
+        for box in final_boxes:
+            # scale x from fraction of clip to absolute and add offset to this clip
+            box[2] = box[2]*clip_len + clip_num*(clip_len-overlap)
+            # scale width
+            box[3]*=clip_len
+
+        # finally... record our results!
+        # output format is a file named for the spectrogram containing <detections_in_this_clip> lines
+        # each consisting of: <class number> <confidence> <x_center_in_seconds> <width_in_seconds>
         filename = os.path.join(outputs_dir, spec_names[i] + '.txt')
         with open(filename, "w") as f:
             for box in final_boxes:
@@ -185,7 +180,7 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
                 f.write('\n')
 
 
-# TODO Maybe modify these functions a bit
+
 def save_checkpoint(checkpoint_name, model, optimizer):
     print(f"=> Saving {checkpoint_name}")
     checkpoint = {

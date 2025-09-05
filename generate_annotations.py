@@ -1,8 +1,10 @@
 import os
 import pandas as pd
 
+from utils import non_max_suppression
+import config
+
 output_dir = "outputs"
-confidence_threshold = .4
 
 def main():
     annotation_files = dict()
@@ -28,15 +30,31 @@ def main():
     for annotation_filename in annotation_files.keys():
 
         raven_annotations = []
-        unprocessed_annotations = annotation_files[annotation_filename]
-        annotations = []
+        string_annotations = annotation_files[annotation_filename]
 
-        # go through the list of annotations and convert to ints and floats and filter by confidence
-        for annotation in unprocessed_annotations:
-            if float(annotation[1]) >= confidence_threshold:
-                cls = "call" if annotation[0] == "0" else "song"
-                annotation = [cls, float(annotation[2]), float(annotation[3]), float(annotation[4])]
-                annotations.append(annotation)
+        annotations = [
+            [int(annotation[0]), float(annotation[1]), float(annotation[2]), float(annotation[3])]
+                 for annotation in string_annotations]
+
+        # perform non maximal suppression
+        annotations = non_max_suppression(annotations)
+
+        # format the annotations in preparation for turning them into Raven rows
+        # convert x_center and width format to begin, end, width
+        # and lookup the class labels
+        # the first part needs to be done now (before the Raven loop) because
+        # we want to sort by starting time first
+
+        classes = config.CLASSES
+
+        for i in range(len(annotations)):
+            current_annotation = annotations[i]
+            class_label, _, x_center, width = current_annotation
+
+            x_begin = x_center - width/2
+            x_end = x_begin+width
+
+            annotations[i] = [classes[class_label], x_begin, x_end, width]
 
         # sort by start time
         annotations.sort(key=lambda x: x[1])
