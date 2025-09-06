@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from sys import argv
 
 from utils import non_max_suppression
 import config
@@ -7,8 +8,17 @@ import config
 output_dir = "outputs"
 
 def main():
+
+    if len(argv) == 1:
+        output_list = os.listdir(output_dir)
+        output_file_insertion = ""
+    else:
+        with open(argv[1], "r") as f:
+            output_list = [line.strip()[:-2] + 'txt' for line in f.readlines()]
+        output_file_insertion = '_' + os.path.basename(argv[1][:-4])
+
+
     annotation_files = dict()
-    output_list = os.listdir(output_dir)
 
     for output in output_list:
 
@@ -65,7 +75,7 @@ def main():
 
         df = pd.DataFrame(raven_annotations, columns=columns)
         df.reset_index(drop=True, inplace=True)
-        df.to_csv(annotation_filename + '_annotations.txt', sep='\t', index=False)
+        df.to_csv(annotation_filename + output_file_insertion + '_annotations.txt', sep='\t', index=False)
 
 
 if __name__ == "__main__":
