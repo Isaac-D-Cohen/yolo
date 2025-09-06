@@ -11,6 +11,8 @@ from sys import argv
 from math import floor
 import os
 
+from config import CLASSES as classes
+
 """
 This script takes a mode - either train or infer - and a directory name. A directory with this
 name should exist in audio/ and maybe annotations/ too. The one in audio/ should contain .wav files;
@@ -43,8 +45,8 @@ def read_annotations_file(annotations_filename):
         time_begin = float(raw_line[3])
         time_end = float(raw_line[4])
 
-        # we can use 0 for call and 1 for song
-        obj_class = 0 if raw_line[10] == "call" else 1
+        # map our class string to an integer using the classes array from the config file
+        obj_class = classes.index(raw_line[10])
 
         annotations.append([obj_class, time_begin, time_end])
 
