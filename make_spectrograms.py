@@ -33,15 +33,15 @@ def ensure_dirs_exist(tuple_of_dir_names):
             print(f"Error: {dir_name} doesn't exist.")
             exit(1)
 
-# read a Raven annotations file into a list of lists where each inner list
-# represents a box and is in the format [class, begin, end]
+# read a Raven annotations file and return a list of lists where each inner list
+# represents a box and is in the format [class_index, begin, end]
 def read_annotations_file(annotations_filename):
 
     annotations_df = pd.read_csv(annotations_filename, sep='\t')
     important_columns = annotations_df.loc[:, ["Annotation", "Begin Time (s)", "End Time (s)"]]
 
     # map our class strings to integer indices using the classes array from the config file
-    important_columns['Annotation'].apply(lambda classname: classes.index(classname))
+    important_columns["Annotation"] = important_columns["Annotation"].apply(lambda classname: classes.index(classname))
 
     return important_columns.values.tolist()
 
