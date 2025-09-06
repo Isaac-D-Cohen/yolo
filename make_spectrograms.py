@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import config
 
 import numpy as np
+import pandas as pd
 
 from sys import argv
 from math import floor
@@ -36,21 +37,13 @@ def ensure_dirs_exist(tuple_of_dir_names):
 # represents a box and is in the format [class, begin, end]
 def read_annotations_file(annotations_filename):
 
-    annotations = []
+    annotations_df = pd.read_csv(annotations_filename, sep='\t')
+    important_columns = annotations_df.loc[:, ["Annotation", "Begin Time (s)", "End Time (s)"]]
 
-    with open(annotations_filename, "r") as f:
-        lines_raw = [line.strip('\n').split('\t') for line in f.readlines()]
+    # map our class strings to integer indices using the classes array from the config file
+    important_columns['Annotation'].apply(lambda classname: classes.index(classname))
 
-    for raw_line in lines_raw[1:]:
-        time_begin = float(raw_line[3])
-        time_end = float(raw_line[4])
-
-        # map our class string to an integer using the classes array from the config file
-        obj_class = classes.index(raw_line[10])
-
-        annotations.append([obj_class, time_begin, time_end])
-
-    return annotations
+    return important_columns.values.tolist()
 
 
 def make_spectrograms(audio_filename, clip_len, step):
