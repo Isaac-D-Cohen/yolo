@@ -187,7 +187,7 @@ def save_checkpoint(checkpoint_name, model, optimizer):
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
     }
-    torch.save(f"checkpoints/{checkpoint_name}.pth.tar", filename)
+    torch.save(checkpoint, f"checkpoints/{checkpoint_name}.pth.tar")
 
 
 def load_checkpoint(checkpoint_name, model, optimizer=None):
