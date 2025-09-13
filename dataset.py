@@ -56,6 +56,9 @@ class YOLODataset(Dataset):
         # load the actual spectrogram
         image = torch.load(img_path, weights_only=True)
 
+        # normalize a little more
+        image = (image - image.mean())/image.std()
+
         # see if we have labels for this image
         label_filename = self.image_filenames[index][:-2] + 'txt'
         label_path = os.path.join(self.label_dir, label_filename)

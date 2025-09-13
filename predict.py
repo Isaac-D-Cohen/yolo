@@ -20,6 +20,8 @@ class InputDataset(Dataset):
         img_path = os.path.join(self.input_dir, self.image_filenames[index])
         # load the spectrogram
         image = torch.load(img_path, weights_only=True)
+        # normalize
+        image = (image - image.mean())/image.std()
         # return the spectrogram, and its index
         return {'img': image, 'idx': index}
 
@@ -56,7 +58,7 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    checkpoint_name = "checkpoint15"
+    checkpoint_name = "checkpoint20"
 
     dataset = InputDataset()
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)

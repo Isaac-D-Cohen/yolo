@@ -111,7 +111,7 @@ if __name__ == "__main__":
         model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
     )
 
-    checkpoint_name = "checkpoint16"
+    checkpoint_name = "checkpoint20"
 
     # load_checkpoint(checkpoint_name, model=model)
 

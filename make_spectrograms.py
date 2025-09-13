@@ -41,7 +41,8 @@ def read_annotations_file(annotations_filename):
     important_columns = annotations_df.loc[:, ["Annotation", "Begin Time (s)", "End Time (s)"]]
 
     # map our class strings to integer indices using the classes array from the config file
-    important_columns["Annotation"] = important_columns["Annotation"].apply(lambda classname: classes.index(classname))
+    # (we convert to lowercase first because sometimes annotators enter "Song" or "SONG" instead of "song")
+    important_columns["Annotation"] = important_columns["Annotation"].apply(lambda classname: classes.index(classname.lower()))
 
     return important_columns.values.tolist()
 
@@ -167,7 +168,7 @@ def make_labels(annotations_filename, clip_len, step):
 def main():
 
     if len(argv) < 3:
-        print(f"Format: {argv[0]}  <mode: either 'train' or 'infer'>  <directory with files>...")
+        print(f"Format: {argv[0]}  <mode: either 'train' or 'infer'>  <directory with files>")
         exit(0)
 
     if argv[1] == "train":

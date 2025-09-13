@@ -40,7 +40,7 @@ def intersection_over_union(lines1, lines2):
     # ne_0 is short for "not equal to 0"
     ne_0 = union != 0
 
-    return_tensor = torch.zeros(union.shape)
+    return_tensor = torch.zeros(union.shape).to(config.DEVICE)
     return_tensor[ne_0] = intersection[ne_0] / union[ne_0]
 
     return return_tensor

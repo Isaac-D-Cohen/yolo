@@ -14,9 +14,9 @@ class YoloLoss(nn.Module):
 
         # Constants to weigh different parts of the loss differently
         self.lambda_class = 1
-        self.lambda_noobj = 10
+        self.lambda_noobj = 12
         self.lambda_obj = 1
-        self.lambda_box = 10
+        self.lambda_box = 12
 
     def forward(self, predictions, target, anchors):
         # We make two tensors of true/false values marking which anchors
