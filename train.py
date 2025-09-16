@@ -4,6 +4,7 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 import os
+from sys import argv
 
 from tqdm import tqdm
 
@@ -27,7 +28,7 @@ def save_set_names(subset, filename):
 
 
 # does both training and eval
-def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, training_mode, output_preds=False):
+def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, training_mode, output_preds=False, silent):
 
     loader = DataLoader(dataset=subset, batch_size=config.BATCH_SIZE, shuffle=True)
 
@@ -43,8 +44,12 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
         #             pass
                     # m.train()            # <-- force BN back to batch mode only
 
+    if silent:
+        iterator = loader
+    else:
+        iterator = tqdm(loader)
 
-    for batch in tqdm(loader):
+    for batch in iterator:
 
         x = batch["img"]
         y = batch["labels"]
@@ -78,10 +83,16 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
             #     if isinstance(m, torch.nn.BatchNorm1d):
             #         print(m.running_mean.mean().item(), m.running_var.mean().item())
 
-        print(f"Loss: {loss.detach()}")
+        if silent == False:
+            print(f"Loss: {loss.detach()}")
 
 
-if __name__ == "__main__":
+def main():
+
+    if len(argv) > 1 and argv[1] == "--silent":
+        silent = True
+    else:
+        silent = False
 
     anchors = config.ANCHORS
 
@@ -128,10 +139,14 @@ if __name__ == "__main__":
 
     for major_epoch in range(4):
         for _ in range(10):
-            train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True)
-        train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False)
+            train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True, silent)
+        train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, silent=False)
 
-    train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True)
+    train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True, silent=False)
 
     save_checkpoint(checkpoint_name, model, optimizer)
 
+
+
+if __name__ == "__main__":
+    main()
