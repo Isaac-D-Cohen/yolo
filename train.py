@@ -14,7 +14,7 @@ from loss import YoloLoss
 from utils import write_predictions, save_checkpoint, load_checkpoint
 
 
-def save_set_names(subset, filename):
+def save_set_names(dataset, subset, filename):
 
     with open(filename, "w") as f:
         loader = DataLoader(dataset=subset, batch_size=1, shuffle=False)
@@ -28,7 +28,7 @@ def save_set_names(subset, filename):
 
 
 # does both training and eval
-def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, training_mode, output_preds=False, silent):
+def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, training_mode, output_preds=False, silent=False):
 
     loader = DataLoader(dataset=subset, batch_size=config.BATCH_SIZE, shuffle=True)
 
@@ -111,8 +111,8 @@ def main():
     train_set, eval_set = random_split(dataset, [0.90, 0.1])
 
 
-    save_set_names(train_set, "train_set.txt")
-    save_set_names(eval_set, "eval_set.txt")
+    save_set_names(dataset, train_set, "train_set.txt")
+    save_set_names(dataset, eval_set, "eval_set.txt")
 
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
@@ -122,7 +122,7 @@ def main():
         model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
     )
 
-    checkpoint_name = "checkpoint20"
+    checkpoint_name = "checkpoint22"
 
     # load_checkpoint(checkpoint_name, model=model)
 
@@ -139,7 +139,7 @@ def main():
 
     for major_epoch in range(4):
         for _ in range(10):
-            train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True, silent)
+            train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True, silent=silent)
         train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, silent=False)
 
     train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, output_preds=True, silent=False)

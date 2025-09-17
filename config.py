@@ -21,7 +21,8 @@ PROBABILITY_THRESHOLD = .2
 IOU_THRESHOLD = 0.2
 
 
-CLASSES = ["call",
+CLASSES = [
+           "call",
            "song"]
 NUM_CLASSES=len(CLASSES)
 IN_CHANNELS = 128

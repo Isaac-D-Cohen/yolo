@@ -58,7 +58,7 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    checkpoint_name = "checkpoint20"
+    checkpoint_name = "checkpoint21"
 
     dataset = InputDataset()
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
