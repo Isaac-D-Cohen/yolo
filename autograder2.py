@@ -85,6 +85,9 @@ def main():
     if ground_truth_df is None or model_output_df is None:
         exit(1)
 
+    ground_truth_df['Annotation'] = ground_truth_df['Annotation'].apply(lambda classname: classname.lower())
+    model_output_df['Annotation'] = model_output_df['Annotation'].apply(lambda classname: classname.lower())
+
     # how many classes do we have
     classes = set(ground_truth_df['Annotation']).union(set(model_output_df['Annotation']))
 
