@@ -57,7 +57,8 @@ class YOLODataset(Dataset):
         image = torch.load(img_path, weights_only=True)
 
         # normalize a little more
-        image = (image - image.mean())/image.std()
+        image = image + (0 if image.min() >= 0 else -image.min())
+        image = image/image.max()
 
         # see if we have labels for this image
         label_filename = self.image_filenames[index][:-2] + 'txt'

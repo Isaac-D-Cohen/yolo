@@ -21,7 +21,7 @@ class InputDataset(Dataset):
         # load the spectrogram
         image = torch.load(img_path, weights_only=True)
         # normalize
-        image = (image - image.mean())/image.std()
+#        image = (image - image.mean())/image.std()
         # return the spectrogram, and its index
         return {'img': image, 'idx': index}
 

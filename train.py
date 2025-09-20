@@ -122,7 +122,7 @@ def main():
         model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
     )
 
-    checkpoint_name = "checkpoint22"
+    checkpoint_name = "checkpoint31"
 
     # load_checkpoint(checkpoint_name, model=model)
 
@@ -137,8 +137,8 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    for major_epoch in range(4):
-        for _ in range(10):
+    for major_epoch in range(8):
+        for _ in range(50):
             train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True, silent=silent)
         train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, silent=False)
 

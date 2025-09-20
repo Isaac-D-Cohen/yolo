@@ -63,7 +63,7 @@ def make_spectrograms(audio_filename, clip_len, step):
 
     # if we are under 10 seconds, add some silence as filler
     if samples_short > 0:
-        silence_tensor = torch.zeroes(samples_short)
+        silence_tensor = torch.zeros((1, samples_short))
         waveform = torch.cat((waveform, silence_tensor), dim=1)
 
 

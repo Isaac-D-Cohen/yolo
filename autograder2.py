@@ -4,7 +4,7 @@ from sys import argv
 import os
 
 # threshold for a box to count as present in the other list
-iou_threshold = 0.75
+iou_threshold = 0.5
 
 def load_annotations_df(filename):
     if os.path.exists(filename) == False:
