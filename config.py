@@ -11,10 +11,24 @@ HOP_LENGTH = 512
 N_FFT = 2048
 N_MELS = 128
 
+# for train/validation split
+TRAIN_PORTION = 0.9
+
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
-NUM_EPOCHS = 100
+
+# a minor epoch is just a run through all training data
+# a major epoch is MINOR_EPOCHS number of minor epochs
+# and then a validation run
+MINOR_EPOCHS = 50
+MAJOR_EPOCHS = 8
+
+# loss weights (constants to weigh different parts of the loss differently)
+LAMBDA_CLASS = 1
+LAMBDA_NOOBJ = 16
+LAMBDA_OBJ = 1
+LAMBDA_BOX = 16
 
 # for nms
 PROBABILITY_THRESHOLD = .2

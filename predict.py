@@ -20,8 +20,7 @@ class InputDataset(Dataset):
         img_path = os.path.join(self.input_dir, self.image_filenames[index])
         # load the spectrogram
         image = torch.load(img_path, weights_only=True)
-        # normalize
-#        image = (image - image.mean())/image.std()
+
         # return the spectrogram, and its index
         return {'img': image, 'idx': index}
 

@@ -37,12 +37,7 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
         model.train()
     else:
         torch.autograd.set_grad_enabled(False)
-        model.eval()                     # your failing setting
-        # with torch.no_grad():
-        #     for m in model.modules():
-        #         if isinstance(m, torch.nn.BatchNorm1d):
-        #             pass
-                    # m.train()            # <-- force BN back to batch mode only
+        model.eval()
 
     if silent:
         iterator = loader
@@ -79,9 +74,6 @@ def train_model(model, subset, dataset, optimizer, loss_fn, scaled_anchors, trai
                 spec_names.append(dataset.get_spect_name(i))
 
             write_predictions(out, scaled_anchors, spec_names)
-            # for m in model.modules():
-            #     if isinstance(m, torch.nn.BatchNorm1d):
-            #         print(m.running_mean.mean().item(), m.running_var.mean().item())
 
         if silent == False:
             print(f"Loss: {loss.detach()}")
@@ -108,7 +100,7 @@ def main():
         S=config.S,
     )
 
-    train_set, eval_set = random_split(dataset, [0.90, 0.1])
+    train_set, eval_set = random_split(dataset, [config.TRAIN_PORTION, 1-config.TRAIN_PORTION])
 
 
     save_set_names(dataset, train_set, "train_set.txt")
@@ -119,26 +111,20 @@ def main():
     loss_fn = YoloLoss()
 
     optimizer = optim.Adam(
-        model.parameters(), lr=config.LEARNING_RATE#, #weight_decay=config.WEIGHT_DECAY
+        model.parameters(), lr=config.LEARNING_RATE#, weight_decay=config.WEIGHT_DECAY
     )
 
     checkpoint_name = "checkpoint31"
 
     # load_checkpoint(checkpoint_name, model=model)
 
-    # for m in model.modules():
-    #     if isinstance(m, torch.nn.BatchNorm1d):
-    #         print(m.running_mean.mean().item(), m.running_var.mean().item())
-    #
-    # exit()
-
     scaled_anchors = (
         torch.tensor(anchors)
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    for major_epoch in range(8):
-        for _ in range(50):
+    for major_epoch in range(config.MAJOR_EPOCHS):
+        for _ in range(config.MINOR_EPOCHS):
             train_model(model, train_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=True, silent=silent)
         train_model(model, eval_set, dataset, optimizer, loss_fn, scaled_anchors, training_mode=False, silent=False)
 

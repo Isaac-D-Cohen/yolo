@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from utils import intersection_over_union
+from config import LAMBDA_CLASS, LAMBDA_NOOBJ, LAMBDA_OBJ, LAMBDA_box
 
 class YoloLoss(nn.Module):
     def __init__(self):
@@ -13,10 +14,10 @@ class YoloLoss(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
         # Constants to weigh different parts of the loss differently
-        self.lambda_class = 1
-        self.lambda_noobj = 16
-        self.lambda_obj = 1
-        self.lambda_box = 16
+        self.lambda_class = LAMBDA_CLASS
+        self.lambda_noobj = LAMBDA_NOOBJ
+        self.lambda_obj = LAMBDA_OBJ
+        self.lambda_box = LAMBDA_box
 
     def forward(self, predictions, target, anchors):
         # We make two tensors of true/false values marking which anchors
