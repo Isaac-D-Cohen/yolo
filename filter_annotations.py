@@ -51,15 +51,19 @@ def main():
             subset_in_window = all_annotations[start_before_end_of_window & end_after_start_of_window]
 
             # now truncate the ones that go over the edges of the window
-            truncate_at_start = subset_in_window['Begin Time (s)'] > start
-            subset_in_window[truncate_at_start]['Begin Time (s)'] = start
-            truncate_at_end = subset_in_window['End Time (s)'] < end
-            subset_in_window[truncate_at_end]['End Time (s)'] = end
+            truncate_at_start = subset_in_window['Begin Time (s)'] < start
+            subset_in_window.loc[truncate_at_start, 'Begin Time (s)'] = start
+            truncate_at_end = subset_in_window['End Time (s)'] > end
+            subset_in_window.loc[truncate_at_end, 'End Time (s)'] = end
+
+            deltas = subset_in_window['End Time (s)'] - subset_in_window['Begin Time (s)']
+            subset_in_window.loc[:, 'Delta Time (s)'] = deltas
 
             if output_df.empty:
                 output_df = subset_in_window
             else:
                 output_df = pd.concat([output_df, subset_in_window])
+
 
         output_df.reset_index(drop=True, inplace=True)
         output_df.to_csv(sound_filename + '_' + filter_filename + '_annotations.txt', sep='\t', index=False)
