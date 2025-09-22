@@ -1,26 +1,16 @@
 import os
 import pandas as pd
-from sys import argv
+import argparse
 
 from utils import non_max_suppression
 import config
 
-output_dir = "outputs"
 
-def main():
-
-    if len(argv) == 1:
-        output_list = os.listdir(output_dir)
-        output_file_insertion = ""
-    else:
-        with open(argv[1], "r") as f:
-            output_list = [line.strip()[:-2] + 'txt' for line in f.readlines()]
-        output_file_insertion = '_' + os.path.basename(argv[1][:-4])
-
+def generate_annotations(model_output_dir, model_output_list, annotations_output_dir, output_file_insertion):
 
     annotation_files = dict()
 
-    for output in output_list:
+    for output in model_output_list:
 
         index_before_number = output.rfind('_')
         annotation_filename = output[:index_before_number]
@@ -28,7 +18,7 @@ def main():
         if annotation_filename not in annotation_files:
             annotation_files[annotation_filename] = []
 
-        output_name = os.path.join(output_dir, output)
+        output_name = os.path.join(output_dir, model_output_list)
 
         with open(output_name, "r") as f:
             lines = [line.strip('\n').split(' ') for line in f.readlines()]
@@ -75,7 +65,35 @@ def main():
 
         df = pd.DataFrame(raven_annotations, columns=columns)
         df.reset_index(drop=True, inplace=True)
-        df.to_csv(annotation_filename + output_file_insertion + '_annotations.txt', sep='\t', index=False)
+
+        output_filename = annotation_filename + output_file_insertion + '_annotations.txt'
+        df.to_csv(os.path.join(annotations_output_dir, output_filename), sep='\t', index=False)
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-output-dir", help="Directory with output files from the model" default="outputs")
+    parser.add_argument("--model-output-list", help="If provided the script will use only spectrograms from this text file to make the annotations file")
+    parser.add_argument("--annotations-output-dir", help="If provided the script will output the annotations file to this directory")
+    args = parser.parse_args()
+
+    model_output_dir = args.model_output_dir
+
+    if args.model_output_list == None:
+        model_output_list = os.listdir(model_output_dir)
+        output_file_insertion = ""
+    else:
+        with open(args.model_output_list, "r") as f:
+            model_output_list = [line.strip()[:-2] + 'txt' for line in f.readlines()]
+        output_file_insertion = '_' + os.path.basename(args.model_output_list[:-4])
+
+    if args.annotations_output_dir == None:
+        annotations_output_dir = "."
+    else:
+        annotations_output_dir = args.annotations_output_dir
+
+    generate_annotations(model_output_dir, model_output_list, annotations_output_dir, output_file_insertion)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from utils import intersection_over_union
-from config import LAMBDA_CLASS, LAMBDA_NOOBJ, LAMBDA_OBJ, LAMBDA_box
+from config import LAMBDA_CLASS, LAMBDA_NOOBJ, LAMBDA_OBJ, LAMBDA_BOX
 
 class YoloLoss(nn.Module):
     def __init__(self):
@@ -19,6 +19,11 @@ class YoloLoss(nn.Module):
         self.lambda_obj = LAMBDA_OBJ
         self.lambda_box = LAMBDA_box
 
+
+    # target is one of the tensors in the list we output from the dataset class
+    # (specifically, it's the one corresponding to this scale - the loss is called for
+    # each scale). predictions is the output from the model for this scale.
+    # it has shape [batch, anchors_per_scale, cells_in_this_scale (S), num_classes+3]
     def forward(self, predictions, target, anchors):
         # We make two tensors of true/false values marking which anchors
         # are supposed to predict an object (in this target tensor) and which aren't.
@@ -49,7 +54,7 @@ class YoloLoss(nn.Module):
         # (in the next section we will specifically correct the box position and size, so ideally the iou should tend towards 1)
 
         # so first we reshape the anchors to match the number of dimensions in our predictions tensor
-        # new shape = [batch, num_anchors, cells (or x, width, whatever), prediction_values]
+        # new shape = [batch, num_anchors, cells_in_this_scale, prediction_values]
         anchors = anchors.reshape(1, 3, 1, 1)
 
 

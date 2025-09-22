@@ -10,8 +10,8 @@ from glob import glob
 from sys import argv
 
 
-# for each point calculate the distance to each center and find the min
-# return a parallel array containing numbers of centers for each point
+# for each point calculate the distance to each center and find the min (closest center for each point)
+# return a parallel array (lenght num_points) containing a center assignment for each point
 def assign_points(points, centers):
 
     k = len(centers)
@@ -21,7 +21,7 @@ def assign_points(points, centers):
     dist = torch.empty(k)
 
     for p in range(num_points):
-        for c in range(len(centers)):
+        for c in range(k):
             dist[c] = abs((points[p]-centers[c]).item())
         assignments[p] = torch.argmin(dist)
     return assignments
@@ -39,6 +39,7 @@ def update_centers(assignments, points, centers):
             centers[c] = pts.mean()
 
 
+# finds the squared distance from the centers to the points assigned to them to determine how well we did
 def get_squared_distance(assignments, points, centers):
 
     k = len(centers)
@@ -108,7 +109,7 @@ def run_simulation(k, num_points, num_iterations, print_everything):
 
 if __name__ == "__main__":
 
-    filenames = glob("./labels/*.txt")
+    filenames = glob("./data/labels/*.txt")
     widths = []
 
     for fname in filenames:

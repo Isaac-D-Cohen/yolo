@@ -57,7 +57,7 @@ def intersection_over_union(lines1, lines2):
 def non_max_suppression(bboxes):
 
     probability_threshold = config.PROBABILITY_THRESHOLD
-    iou_threshold = config.IOU_THRESHOLD
+    iou_threshold = config.NMS_IOU_THRESHOLD
 
     bboxes = [box for box in bboxes if box[1] > probability_threshold]
     bboxes.sort(key=lambda x: x[1], reverse=True)
@@ -180,24 +180,35 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
                 f.write('\n')
 
 
+def get_latest_checkpoint_number():
 
-def save_checkpoint(checkpoint_name, model, optimizer):
+    chkpts = os.listdir("checkpoints")
+
+    # chop off the "checkpoint" part and just get the number at the end
+    chkpts = [int(chkpt[10:]) for chkpt in chkpts]
+
+    chkpts.sort()
+
+    return chkpts[-1]
+
+
+def save_checkpoint(path, checkpoint_name, model, optimizer):
     print(f"=> Saving {checkpoint_name}")
     checkpoint = {
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
     }
-    torch.save(checkpoint, f"checkpoints/{checkpoint_name}.pth.tar")
+    torch.save(checkpoint, os.path.join(path, f"{checkpoint_name}.pth.tar"))
 
 
-def load_checkpoint(checkpoint_name, model, optimizer=None):
+def load_checkpoint(path, checkpoint_name, model, optimizer=None):
     print(f"=> Loading {checkpoint_name}")
-    checkpoint = torch.load(f"checkpoints/{checkpoint_name}.pth.tar", map_location=config.DEVICE)
+    checkpoint = torch.load(os.path.join(path, f"{checkpoint_name}.pth.tar"), map_location=config.DEVICE)
     model.load_state_dict(checkpoint["state_dict"])
+
     if optimizer != None:
         optimizer.load_state_dict(checkpoint["optimizer"])
 
-    # If we don't do this then it will just have learning rate of old checkpoint
-    # and it will lead to many hours of debugging \:
-    # for param_group in optimizer.param_groups:
-    #     param_group["lr"] = lr
+    # replace the learning rate of the old checkpoint with our learning rate
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = config.LEARNING_RATE

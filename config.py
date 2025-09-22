@@ -11,11 +11,22 @@ HOP_LENGTH = 512
 N_FFT = 2048
 N_MELS = 128
 
+
+# for dataset
+
+# if the network uses a free anchor to predict an object
+# when that object already has another anchor at this scale
+# (with a better IOU), then if the IOU between the object
+# and the free anchor exceeds this threshold, we won't
+# punish the network for the prediction
+IGNORE_IOU_THRESH = 0.5
+
 # for train/validation split
 TRAIN_PORTION = 0.9
 
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
+# TODO remove this if we never end up using it
 WEIGHT_DECAY = 1e-4
 
 # a minor epoch is just a run through all training data
@@ -32,12 +43,16 @@ LAMBDA_BOX = 16
 
 # for nms
 PROBABILITY_THRESHOLD = .2
-IOU_THRESHOLD = 0.2
+NMS_IOU_THRESHOLD = 0.2
 
+
+# threshold for a box to count as present in the other list
+AUTOGRADER_IOU_THRESHOLD = 0.5
 
 CLASSES = [
            "call",
            "song"]
+
 NUM_CLASSES=len(CLASSES)
 IN_CHANNELS = 128
 

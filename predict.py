@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 
 from model import YOLOv3
-from utils import write_predictions, load_checkpoint
+from utils import write_predictions, load_checkpoint, get_latest_checkpoint_number
 
 # a dataset class just to just load spectrograms
 class InputDataset(Dataset):
@@ -57,13 +57,20 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
-    checkpoint_name = "checkpoint21"
 
     dataset = InputDataset()
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
-    load_checkpoint(checkpoint_name, model=model)
+    checkpoint_name = "checkpoint21"
+
+    if checkpoint_name == None:
+        checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"
+
+    checkpoint_dir_path = os.path.join("checkpoints", checkpoint_name)
+
+    load_checkpoint(checkpoint_dir_path, checkpoint_name, model)
+
     model.eval()
 
 

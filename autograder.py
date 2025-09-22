@@ -1,26 +1,18 @@
 import torch
-import numpy as np
+import pandas as pd
 from sys import argv
-import warnings
+import os
 
-# threshold for a box to count as present in the other list
-iou_threshold = 0.7
+from config import AUTOGRADER_IOU_THRESHOLD as iou_threshold
 
-# threshold for a box to count as having been predicted by the model
-# (we will eliminate all boxes below this threshold for our analysis)
-confidence_threshold = 0.2
+def load_annotations_df(filename):
+    if os.path.exists(filename) == False:
+        print(f"Error: {filename} does not exist")
+        return None
+    else:
+        annotations_df = pd.read_csv(filename, sep="\t")
+        return annotations_df
 
-def read_ground_truth_bboxes(filename):
-
-    with open(filename, "r") as f:
-        lines_raw = [line.strip('\n').split('\t') for line in f.readlines()]
-
-    lines = [
-            [0.0 if line[9] == "call" else 1.0, float(line[3]), float(line[4]), float(line[7])]
-            for line in lines_raw[1:]
-        ]
-
-    return torch.tensor(lines)
 
 
 # takes two tensors of lines, each tensor having shape [batch_size, 3]
@@ -44,6 +36,24 @@ def intersection_over_union(lines1, lines2):
     return return_tensor
 
 
+# takes two tensors of shape [num_boxes, 3] where 3 is begin, end, length
+# outputs stats on recall and precision
+
+"""
+Algorithm:
+Conceptually we make a matrix of all model boxes as columns and all gt boxes as rows
+and take the IOU of every pair. Then we see if across each row and column, the max IOU
+is above some threshold. If so, we consider that box "predicted".
+
+But here's how it's actually implmeneted:
+- repeat the model (pred) boxes so each one occurs num_gt_boxes times
+- reshape to be [num_model_boxes, num_gt_boxes, attributes]
+- repeat gt boxes model_boxes times
+- reshape to be [num_gt_boxes, num_model_boxes, attributes]
+- get ious for these two tensors. resulting tensor is 1-d with len [num_model_boxes*num_gt_boxes]
+- reshape resulting tensor to [num_model_boxes, num_gt_boxes]
+- see how many we got and return the answers
+"""
 def compare_boxes(gt_bboxes, pred_bboxes):
 
     num_gt_boxes = gt_bboxes.shape[0]
@@ -57,10 +67,10 @@ def compare_boxes(gt_bboxes, pred_bboxes):
 
     total_boxes = num_gt_boxes*num_model_boxes
 
-    pred_bboxes = pred_bboxes.view(total_boxes, 5)
-    gt_bboxes = gt_bboxes.view(total_boxes, 4)
+    pred_bboxes = pred_bboxes.view(total_boxes, 3)
+    gt_bboxes = gt_bboxes.view(total_boxes, 3)
 
-    ious = intersection_over_union(gt_bboxes[:,1:], pred_bboxes[:, 2:])
+    ious = intersection_over_union(gt_bboxes, pred_bboxes)
 
     ious = ious.view(num_gt_boxes, num_model_boxes)
 
@@ -75,77 +85,68 @@ def compare_boxes(gt_bboxes, pred_bboxes):
     return num_model_boxes_that_correspond_to_gt_box, num_gt_that_model_predicted
 
 
-def process_spectrogram(gt_bboxes, num):
-
-    spectrogram_number = int(num)
-
-    t_start = spectrogram_number*5
-    t_end = t_start + 10
-
-    # find the ground truth boxes that are in this spectrogram
-    starts_after_begin_mask = gt_bboxes[:,1] >= t_start
-    ends_before_end_mask = gt_bboxes[:,2] <= t_end
-    mask = torch.logical_and(starts_after_begin_mask, ends_before_end_mask)
-    masked_gt_boxes = gt_bboxes[mask]
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        pred_bboxes = torch.from_numpy(np.loadtxt('outputs/' + num + '.txt', delimiter=" ", ndmin=2, dtype=np.float32))
-
-    if len(pred_bboxes) == 0:
-        return 0, 0, pred_bboxes.shape[0], masked_gt_boxes.shape[0]
-
-    pred_bboxes = pred_bboxes[pred_bboxes[:,1] >= confidence_threshold]    # filter out the boxes below confidence_threshold
-
-    n1, n2 = compare_boxes(masked_gt_boxes, pred_bboxes)
-
-    return n1, n2, pred_bboxes.shape[0], masked_gt_boxes.shape[0]
-
-
 def main():
 
-    total_n1 = total_n2 = total_num_pred = total_num_gt = 0
+    if len(argv) < 3:
+        print(f"Format: {argv[0]}\t<ground_truth_annotations>\t<model_output_annotations>")
+        exit(0)
 
-    # returns a tensor of shape [num_boxes, 4] where 4 is class, start, end, length
-    gt_bboxes = read_ground_truth_bboxes("dr_manns_annotations.txt")
+    # load the annotations
+    ground_truth_df = load_annotations_df(argv[1])
+    model_output_df = load_annotations_df(argv[2])
 
-    for arg in argv[1:]:
+    if ground_truth_df is None or model_output_df is None:
+        exit(1)
 
-        n1, n2, num_pred, num_gt = process_spectrogram(gt_bboxes, arg)
+    ground_truth_df['Annotation'] = ground_truth_df['Annotation'].apply(lambda classname: classname.lower())
+    model_output_df['Annotation'] = model_output_df['Annotation'].apply(lambda classname: classname.lower())
 
-        print(f"Spectrogram: {arg}")
-        print(f"{n1}/{num_pred} of the model's predictions were in ground truth data")
-        print(f"{n2}/{num_gt} of the ground truth boxes were picked up by the model")
+    # how many classes do we have
+    classes = set(ground_truth_df['Annotation']).union(set(model_output_df['Annotation']))
+
+    total_n1 = total_n2 = 0
+
+    for class_name in classes:
+
+        gt_mask = ground_truth_df['Annotation'] == class_name
+        mo_mask = model_output_df['Annotation'] == class_name
+
+        gt_class_bboxes_df = ground_truth_df.loc[gt_mask, ["Begin Time (s)", "End Time (s)", "Delta Time (s)"]]
+        mo_class_bboxes_df = model_output_df.loc[mo_mask, ["Begin Time (s)", "End Time (s)", "Delta Time (s)"]]
+
+        gt_class_bboxes = torch.tensor(gt_class_bboxes_df.to_numpy(), dtype=torch.float32)
+        mo_class_bboxes = torch.tensor(mo_class_bboxes_df.to_numpy(), dtype=torch.float32)
+
+        n1, n2 = compare_boxes(gt_class_bboxes, mo_class_bboxes)
+
+        num_gt, num_pred = sum(gt_mask), sum(mo_mask)
+
+        print(f"Class: {class_name}")
+
+        if num_pred != 0:
+            print(f"{n1}/{num_pred} of the model's predictions were in ground truth data, or precision = {n1/num_pred*100}%")
+        else:
+            print("Model predicted no boxes, so precision is undefined.")
+
+        if num_gt != 0:
+            print(f"{n2}/{num_gt} of the ground truth boxes were picked up by the model, or recall = {n2/num_gt*100}%")
+        else:
+            print("There were no ground truth boxes in these audio clips, so recall is undefined.")
+
         print()
 
         total_n1 += n1
         total_n2 += n2
-        total_num_pred += num_pred
-        total_num_gt += num_gt
+
+    total_num_gt = len(ground_truth_df)
+    total_num_pred = len(model_output_df)
 
     print("Summary:")
-    print(f"{total_n1}/{total_num_pred} of the model's predictions were in ground truth data")
-    print(f"{total_n2}/{total_num_gt} of the ground truth boxes were picked up by the model")
+    print(f"{total_n1}/{total_num_pred} of the model's predictions were in ground truth data, or precision = {total_n1/total_num_pred*100}%")
+    print(f"{total_n2}/{total_num_gt} of the ground truth boxes were picked up by the model, or recall = {total_n2/total_num_gt*100}%")
     print()
 
 
 if __name__ == "__main__":
     main()
 
-
-
-"""
-algorithm:
-
-- read the mann annotations file into a tensor of shape [lines, attributes]
-- filter for only lines within the current spectrogram
-- read in the results from the model
-- cutoff model boxes with too low confidence
-- repeat the model boxes so each one occurs num_gt_boxes times
-- reshape to be [num_model_boxes, num_gt_boxes, attributes]
-- repeat gt boxes model_boxes times
-- reshape to be [num_gt_boxes, num_model_boxes, attributes]
-- get ious for these two tensors. resulting tensor is 1-d with len [num_model_boxes*num_gt_boxes]
-- reshape resulting tensor to [num_model_boxes, num_gt_boxes]
-- see how many we got and return the answers
-"""

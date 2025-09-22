@@ -166,13 +166,17 @@ class YOLOv3(nn.Module):
         return layers
 
 
-if __name__ == "__main__":
+def test():
     num_classes = 1
     IMAGE_SIZE = 416
     model = YOLOv3(in_channels=128, num_classes=num_classes)
     x = torch.randn((2, 128, IMAGE_SIZE))
     out = model(x)
-    assert model(x)[0].shape == (2, 3, IMAGE_SIZE//32, num_classes + 3)
-    assert model(x)[1].shape == (2, 3, IMAGE_SIZE//16, num_classes + 3)
-    assert model(x)[2].shape == (2, 3, IMAGE_SIZE//8, num_classes + 3)
+    assert out[0].shape == (2, 3, IMAGE_SIZE//32, num_classes + 3)
+    assert out[1].shape == (2, 3, IMAGE_SIZE//16, num_classes + 3)
+    assert out[2].shape == (2, 3, IMAGE_SIZE//8, num_classes + 3)
     print("Success!")
+
+
+if __name__ == "__main__":
+    test()

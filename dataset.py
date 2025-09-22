@@ -33,7 +33,7 @@ class YOLODataset(Dataset):
         self.num_anchors = self.anchors.shape[0]
         self.num_anchors_per_scale = self.num_anchors // 3
 
-        self.ignore_iou_thresh = 0.5
+        self.ignore_iou_thresh = config.IGNORE_IOU_THRESH
 
 
     # The size of the dataset is the number of images
@@ -42,10 +42,10 @@ class YOLODataset(Dataset):
         return len(self.image_filenames)
 
 
-    # This function will return an X and a Y to use during training and evaluation
+    # This function will return an X and a Y to use during training and validation
     # X: a spectrogram tensor (with any audio augementations we might choose to do)
     # Y: a tuple of tensors that we can use to compute the loss function
-    # During actual real life runs we will also want to know the spectrogram number
+    # During runs where we write out our predictions we will also want to know the spectrogram number
     # (a number that can tell us where in the original audio file we are). To allow
     # access to that, we will also return the index
     def __getitem__(self, index):
@@ -83,7 +83,9 @@ class YOLODataset(Dataset):
         # Some of these zeros will be overwritten later with other numbers; the rest will remain 0.
         # These tensors will be compared to what we get out of the network.
         # We will only flip 0 to something else if we want that position to predict an object
-        targets = [torch.zeros((self.num_anchors // 3, S, 4)) for S in self.S]
+        # shape of these tensors [anchors_per_scale, cells (or segments) in that scale (S), 4]
+        # The 4 attributes are obj, x, width, class label
+        targets = [torch.zeros((self.num_anchors_per_scale, S, 4)) for S in self.S]
 
         # as promised
         if return_early:
@@ -91,10 +93,11 @@ class YOLODataset(Dataset):
             return {'img': image, 'labels': tuple(targets), 'idx': index}
 
 
-        # (technically... we are reserving the anchors in the order we are getting
-        # to the bounding boxes. This means a particular bounding box might not get an anchor on some
-        # scale because all three anchors were already taken by other objects. You can image this is more likely
-        # on the 13 cell scale. The upshot is that the order in which the bounding boxes are fed in matters)
+        # (technically... we are matching up the anchors with the bounding boxes on a first come first
+        # served basis, meaning we take the bounding boxes in the order they come in and assign anchors to them.
+        # This means a particular bounding box might not get an anchor on some scale because all three anchors
+        # were already taken by other objects. You can image this is more likely on the 13 cell scale.
+        # The upshot is that the order in which the bounding boxes are fed in matters)
         for box in bboxes:
 
             # get the attributes out of this box
