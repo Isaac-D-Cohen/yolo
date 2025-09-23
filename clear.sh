@@ -1,4 +1,4 @@
-rm outputs/*
-rm data/images/*
-rm data/labels/*
-rm inputs/*
+rm -rf outputs/*
+rm -rf data/images/*
+rm -rf data/labels/*
+rm -rf inputs/*

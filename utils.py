@@ -184,6 +184,9 @@ def get_latest_checkpoint_number():
 
     chkpts = os.listdir("checkpoints")
 
+    if len(chkpts) == 0:
+        return 0
+
     # chop off the "checkpoint" part and just get the number at the end
     chkpts = [int(chkpt[10:]) for chkpt in chkpts]
 

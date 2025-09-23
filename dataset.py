@@ -216,10 +216,10 @@ def test():
         for i in idx:
             spec_names.append(dataset.get_spect_name(i))
 
-        # print(x.shape)
-        # print(len(y))
-        # print(y[0].shape)
-        # print(f"Idx = {idx}")
+        print(x.shape)
+        print(len(y))
+        print(y[0].shape)
+        print(f"Idx = {idx}")
 
         write_predictions(list(y), scaled_anchors, spec_names, is_preds=False)
 

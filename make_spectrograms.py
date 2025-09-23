@@ -5,7 +5,6 @@ import torch.nn.functional as F
 
 import config
 
-import numpy as np
 import pandas as pd
 
 from sys import argv
@@ -90,8 +89,6 @@ def make_spectrograms(audio_filename, clip_len, step):
     hop_length = config.HOP_LENGTH
     n_fft = config.N_FFT
     n_mels = config.N_MELS
-
-    ffts_per_sec = sample_rate/hop_length
 
     mel_transform = tr.MelSpectrogram(sample_rate=sample_rate, n_fft=n_fft, win_length=win_length,
                                     hop_length=hop_length, n_mels=n_mels)

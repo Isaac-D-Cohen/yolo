@@ -17,7 +17,7 @@ class YoloLoss(nn.Module):
         self.lambda_class = LAMBDA_CLASS
         self.lambda_noobj = LAMBDA_NOOBJ
         self.lambda_obj = LAMBDA_OBJ
-        self.lambda_box = LAMBDA_box
+        self.lambda_box = LAMBDA_BOX
 
 
     # target is one of the tensors in the list we output from the dataset class

@@ -30,7 +30,6 @@ def assign_points(points, centers):
 def update_centers(assignments, points, centers):
 
     k = len(centers)
-    num_points = len(points)
 
     for c in range(k):
         # get the points belonging to this center
@@ -43,7 +42,6 @@ def update_centers(assignments, points, centers):
 def get_squared_distance(assignments, points, centers):
 
     k = len(centers)
-    num_points = len(points)
 
     # a running sum
     s = 0

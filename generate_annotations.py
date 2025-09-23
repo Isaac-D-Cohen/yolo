@@ -18,7 +18,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
         if annotation_filename not in annotation_files:
             annotation_files[annotation_filename] = []
 
-        output_name = os.path.join(output_dir, model_output_list)
+        output_name = os.path.join(model_output_dir, model_output_list)
 
         with open(output_name, "r") as f:
             lines = [line.strip('\n').split(' ') for line in f.readlines()]
@@ -73,7 +73,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-output-dir", help="Directory with output files from the model" default="outputs")
+    parser.add_argument("--model-output-dir", help="Directory with output files from the model", default="outputs")
     parser.add_argument("--model-output-list", help="If provided the script will use only spectrograms from this text file to make the annotations file")
     parser.add_argument("--annotations-output-dir", help="If provided the script will output the annotations file to this directory")
     args = parser.parse_args()

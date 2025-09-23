@@ -54,7 +54,9 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
     model.eval()
 
     # pull out all the data at once - no reason to batch for validation
-    val_data = validation_set[:]
+    loader = DataLoader(dataset=validation_set, batch_size=len(validation_set), shuffle=False)
+
+    val_data = next(loader)
     x, y = val_data["img"], val_data["labels"]
 
     out, loss = run_model(model, x, y, loss_fn, scaled_anchors)
@@ -75,7 +77,7 @@ def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, s
     torch.autograd.set_grad_enabled(True)
     model.train()
 
-    loader = DataLoader(dataset=subset, batch_size=config.BATCH_SIZE, shuffle=True)
+    loader = DataLoader(dataset=train_set, batch_size=config.BATCH_SIZE, shuffle=True)
 
     if silent:
         iterator = loader
@@ -102,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--start-with", "-s", metavar="<checkpoint_name>", help="Start with a previous checkpoint and continue training from there")
     parser.add_argument("--silent", action="store_true", help="Don't output the loss during training", default=False)
-    parser.add_argument("--output-preds", action="store_true", help="Output the predictions for the validation data on the final round", default=True)
+    parser.add_argument("--no-output-preds", action="store_true", help="Don't output the predictions for the validation data on the final round", default=False)
     args = parser.parse_args()
 
     # setup the checkpoint directory
@@ -112,7 +114,7 @@ def main():
     os.mkdir(checkpoint_dir_path)
 
     # copy our config file to the checkpoint folder for future reference
-    copyfile("config.py", checkpoint_dir_path)
+    copyfile("config.py", os.path.join(checkpoint_dir_path, "config.py"))
 
     anchors = config.ANCHORS
 
@@ -154,11 +156,13 @@ def main():
         * torch.tensor(config.S).unsqueeze(1).repeat(1, 3)
     ).to(config.DEVICE)
 
+    output_preds = not args.no_output_preds
+
     for major_epoch in range(config.MAJOR_EPOCHS):
         for _ in range(config.MINOR_EPOCHS):
-            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent)
+            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent)
 
-        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and args.output_preds))
+        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds))
 
     save_checkpoint(checkpoint_dir_path, checkpoint_name, model, optimizer)
 
