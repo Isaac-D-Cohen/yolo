@@ -18,7 +18,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
         if annotation_filename not in annotation_files:
             annotation_files[annotation_filename] = []
 
-        output_name = os.path.join(model_output_dir, model_output_list)
+        output_name = os.path.join(model_output_dir, output)
 
         with open(output_name, "r") as f:
             lines = [line.strip('\n').split(' ') for line in f.readlines()]

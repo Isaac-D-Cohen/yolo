@@ -56,7 +56,7 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
     # pull out all the data at once - no reason to batch for validation
     loader = DataLoader(dataset=validation_set, batch_size=len(validation_set), shuffle=False)
 
-    val_data = next(loader)
+    val_data = next(iter(loader))
     x, y = val_data["img"], val_data["labels"]
 
     out, loss = run_model(model, x, y, loss_fn, scaled_anchors)
