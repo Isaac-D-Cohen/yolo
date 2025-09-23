@@ -52,7 +52,7 @@ But here's how it's actually implmeneted:
 - reshape to be [num_gt_boxes, num_model_boxes, attributes]
 - get ious for these two tensors. resulting tensor is 1-d with len [num_model_boxes*num_gt_boxes]
 - reshape resulting tensor to [num_model_boxes, num_gt_boxes]
-- see how many we got and return the answers
+- see which ones we got and return the answers
 """
 def compare_boxes(gt_bboxes, pred_bboxes):
 
@@ -74,15 +74,15 @@ def compare_boxes(gt_bboxes, pred_bboxes):
 
     ious = ious.view(num_gt_boxes, num_model_boxes)
 
-    # how many of the ground truth boxes were predicted by the model
-    num_gt_that_model_predicted = torch.sum(torch.max(ious, dim=1)[0] >= iou_threshold)
+    # which ground truth boxes did the model predict (recall)
+    gt_that_model_predicted = torch.max(ious, dim=1)[0] >= iou_threshold
 
     ious = torch.transpose(ious, 0, 1)
 
-    # how many of the model's output boxes correspond to a ground truth box
-    num_model_boxes_that_correspond_to_gt_box = torch.sum(torch.max(ious, dim=1)[0] >= iou_threshold)
+    # which of the model's output boxes correspond to a ground truth box (precision)
+    model_boxes_that_correspond_to_gt_box = torch.max(ious, dim=1)[0] >= iou_threshold
 
-    return num_model_boxes_that_correspond_to_gt_box, num_gt_that_model_predicted
+    return gt_that_model_predicted, model_boxes_that_correspond_to_gt_box
 
 
 def main():
@@ -117,7 +117,11 @@ def main():
         gt_class_bboxes = torch.tensor(gt_class_bboxes_df.to_numpy(), dtype=torch.float32)
         mo_class_bboxes = torch.tensor(mo_class_bboxes_df.to_numpy(), dtype=torch.float32)
 
-        n1, n2 = compare_boxes(gt_class_bboxes, mo_class_bboxes)
+        gt_that_model_predicted, model_boxes_that_correspond_to_gt_box = compare_boxes(gt_class_bboxes, mo_class_bboxes)
+
+        # get number of pred boxes that correspond to gt box (precision) and the number of gt boxes predicted by the model (recall)
+        # by summing up the boolean maps returned from compare_boxes()
+        n1, n2 = torch.sum(model_boxes_that_correspond_to_gt_box), torch.sum(gt_that_model_predicted),
 
         num_gt, num_pred = sum(gt_mask), sum(mo_mask)
 
@@ -133,7 +137,13 @@ def main():
         else:
             print("There were no ground truth boxes in these audio clips, so recall is undefined.")
 
-        print()
+        print("\n\nModel predictions that did not appear in ground truth data:\n")
+        print(mo_mask[model_boxes_that_correspond_to_gt_box == False])
+
+        print("\n\nGround truth data that the model failed to predict:\n")
+        print(gt_mask[gt_that_model_predicted == False])
+
+        print("\n")
 
         total_n1 += n1
         total_n2 += n2
