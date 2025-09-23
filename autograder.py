@@ -60,7 +60,9 @@ def compare_boxes(gt_bboxes, pred_bboxes):
     num_model_boxes = pred_bboxes.shape[0]
 
     if num_gt_boxes == 0 or num_model_boxes == 0:
-        return 0, 0
+        model_boxes_that_correspond_to_gt_box = torch.tensor([False]*num_model_boxes)
+        gt_that_model_predicted = torch.tensor([False]*num_gt_boxes)
+        return gt_that_model_predicted, model_boxes_that_correspond_to_gt_box
 
     pred_bboxes = pred_bboxes.repeat(num_gt_boxes, 1) # (pred_bboxes, pred_bboxes, pred_bboxes...)
     gt_bboxes = gt_bboxes.unsqueeze(1).repeat(1, num_model_boxes, 1)    # ((gt_box1, gt_box1, gt_box1...), (gt_box2, gt_box2...)...)
@@ -119,9 +121,10 @@ def main():
 
         gt_that_model_predicted, model_boxes_that_correspond_to_gt_box = compare_boxes(gt_class_bboxes, mo_class_bboxes)
 
+
         # get number of pred boxes that correspond to gt box (precision) and the number of gt boxes predicted by the model (recall)
         # by summing up the boolean maps returned from compare_boxes()
-        n1, n2 = torch.sum(model_boxes_that_correspond_to_gt_box), torch.sum(gt_that_model_predicted),
+        n1, n2 = int(torch.sum(model_boxes_that_correspond_to_gt_box)), int(torch.sum(gt_that_model_predicted))
 
         num_gt, num_pred = sum(gt_mask), sum(mo_mask)
 
@@ -137,11 +140,14 @@ def main():
         else:
             print("There were no ground truth boxes in these audio clips, so recall is undefined.")
 
-        print("\n\nModel predictions that did not appear in ground truth data:\n")
-        print(mo_mask[model_boxes_that_correspond_to_gt_box == False])
 
-        print("\n\nGround truth data that the model failed to predict:\n")
-        print(gt_mask[gt_that_model_predicted == False])
+        if num_pred != 0:
+            print("\n\nModel predictions that did not appear in ground truth data:\n")
+            print(model_output_df[mo_mask][(model_boxes_that_correspond_to_gt_box == False).numpy()])
+
+        if num_gt != 0:
+            print("\n\nGround truth data that the model failed to predict:\n")
+            print(ground_truth_df[gt_mask][(gt_that_model_predicted == False).numpy()])
 
         print("\n")
 
