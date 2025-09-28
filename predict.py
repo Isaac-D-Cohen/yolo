@@ -2,6 +2,7 @@ import config
 import torch
 from torch.utils.data import Dataset, DataLoader
 import os
+from sys import argv
 
 from tqdm import tqdm
 
@@ -46,6 +47,11 @@ def clear_outputs():
 
 def main():
 
+    if len(argv) > 1:
+        checkpoint_name = argv[1]
+    else:
+        checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"
+
     clear_outputs()
 
     torch.autograd.set_grad_enabled(False)
@@ -61,11 +67,6 @@ def main():
     dataset = InputDataset()
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
-
-    checkpoint_name = "checkpoint4"
-
-    if checkpoint_name == None:
-        checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"
 
     checkpoint_dir_path = os.path.join("checkpoints", checkpoint_name)
 
