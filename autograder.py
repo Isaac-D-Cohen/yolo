@@ -143,11 +143,11 @@ def main():
 
         if num_pred != 0:
             print("\n\nModel predictions that did not appear in ground truth data:\n")
-            print(model_output_df[mo_mask][(model_boxes_that_correspond_to_gt_box == False).numpy()])
+            print(model_output_df[mo_mask][(model_boxes_that_correspond_to_gt_box == False).numpy()].to_string(index=False))
 
         if num_gt != 0:
             print("\n\nGround truth data that the model failed to predict:\n")
-            print(ground_truth_df[gt_mask][(gt_that_model_predicted == False).numpy()])
+            print(ground_truth_df[gt_mask][(gt_that_model_predicted == False).numpy()].to_string(index=False))
 
         print("\n")
 

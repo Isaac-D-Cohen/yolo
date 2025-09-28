@@ -62,7 +62,7 @@ def main():
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
-    checkpoint_name = "checkpoint21"
+    checkpoint_name = "checkpoint4"
 
     if checkpoint_name == None:
         checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"

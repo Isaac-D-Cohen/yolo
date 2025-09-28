@@ -212,6 +212,6 @@ def load_checkpoint(path, checkpoint_name, model, optimizer=None):
     if optimizer != None:
         optimizer.load_state_dict(checkpoint["optimizer"])
 
-    # replace the learning rate of the old checkpoint with our learning rate
-    for param_group in optimizer.param_groups:
-        param_group["lr"] = config.LEARNING_RATE
+        # replace the learning rate of the old checkpoint with our learning rate
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = config.LEARNING_RATE
