@@ -141,11 +141,11 @@ def main():
             print("There were no ground truth boxes in these audio clips, so recall is undefined.")
 
 
-        if num_pred != 0:
+        if num_pred != 0 and n1 != num_pred:
             print("\n\nModel predictions that did not appear in ground truth data:\n")
             print(model_output_df[mo_mask][(model_boxes_that_correspond_to_gt_box == False).numpy()].to_string(index=False))
 
-        if num_gt != 0:
+        if num_gt != 0 and n2 != num_gt:
             print("\n\nGround truth data that the model failed to predict:\n")
             print(ground_truth_df[gt_mask][(gt_that_model_predicted == False).numpy()].to_string(index=False))
 

@@ -37,9 +37,9 @@ MAJOR_EPOCHS = 8
 
 # loss weights (constants to weigh different parts of the loss differently)
 LAMBDA_CLASS = 1
-LAMBDA_NOOBJ = 16
+LAMBDA_NOOBJ = 20
 LAMBDA_OBJ = 1
-LAMBDA_BOX = 16
+LAMBDA_BOX = 20
 
 # for nms
 PROBABILITY_THRESHOLD = .2
