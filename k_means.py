@@ -123,7 +123,7 @@ if __name__ == "__main__":
     else:
         k = 9
 
-    results, _ = k_means(points, k, 100, False).sort()
+    results, _ = k_means(points, k, 100, False).sort(descending=True)
     print(results)
 
 

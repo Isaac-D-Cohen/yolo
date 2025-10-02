@@ -3,8 +3,8 @@ import torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # for spectrograms
-CLIP_LEN = 10   # length of a clip in seconds
-OVERLAP = 5     # overlap between clips
+CLIP_LEN = 30   # length of a clip in seconds
+OVERLAP = 15    # overlap between clips
 # for fft and mel transform
 WIN_LENGTH = 2048
 HOP_LENGTH = 512
@@ -37,9 +37,9 @@ MAJOR_EPOCHS = 8
 
 # loss weights (constants to weigh different parts of the loss differently)
 LAMBDA_CLASS = 1
-LAMBDA_NOOBJ = 20
+LAMBDA_NOOBJ = 18
 LAMBDA_OBJ = 1
-LAMBDA_BOX = 20
+LAMBDA_BOX = 18
 
 # for nms
 PROBABILITY_THRESHOLD = .2
@@ -61,8 +61,15 @@ S = [13, 26, 52]
 # Got these anchors from the k_means script
 # They represent widths that are scaled to be
 # proportions of the image (so between 0 and 1)
+
+#ANCHORS = [
+#    [0.9634, 0.8620, 0.7547],
+#    [0.6250, 0.4963, 0.3926],
+#    [0.2919, 0.1747, 0.0756]
+#]
+
 ANCHORS = [
-    [0.9634, 0.8620, 0.7547],
-    [0.6250, 0.4963, 0.3926],
-    [0.2919, 0.1747, 0.0756]
+    [0.9672, 0.8793, 0.7871],
+    [0.6872, 0.5913, 0.4842],
+    [0.3548, 0.2213, 0.0820]
 ]
