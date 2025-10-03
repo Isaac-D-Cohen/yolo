@@ -11,8 +11,6 @@ from sys import argv
 from math import floor
 import os
 
-from config import CLASSES as classes
-
 """
 This script takes a mode - either train or infer - and a directory name. A directory with this
 name should exist in audio/ and maybe annotations/ too. The one in audio/ should contain .wav files;
@@ -41,7 +39,7 @@ def read_annotations_file(annotations_filename):
 
     # map our class strings to integer indices using the classes array from the config file
     # (we convert to lowercase first because sometimes annotators enter "Song" or "SONG" instead of "song")
-    important_columns["Annotation"] = important_columns["Annotation"].apply(lambda classname: classes.index(classname.lower()))
+    important_columns["Annotation"] = important_columns["Annotation"].apply(lambda classname: config.CLASSES.index(classname.lower()))
 
     return important_columns.values.tolist()
 
@@ -101,7 +99,7 @@ def make_spectrograms(audio_filename, clip_len, step):
     for block in w:
         mel_spec = mel_transform(block)
         mel_spec = db_transform(mel_spec)
-        mel_spec = F.interpolate(mel_spec, size=416, mode='linear', align_corners=False)
+        mel_spec = F.interpolate(mel_spec, size=config.IMAGE_SIZE, mode='linear', align_corners=False)
         mel_specs.append(mel_spec)
 
     return mel_specs
@@ -211,7 +209,7 @@ def main():
             spectrogram = spectrograms[i]
 
             # shape goes from [1, 128, 416] to [128, 416]
-            spectrogram = spectrogram.view(128, 416)
+            spectrogram = spectrogram.view(128, config.IMAGE_SIZE)
 
             # save the tensor
             filename = os.path.join(images_dest, sound_name + f"_{i}.pt")
@@ -226,7 +224,7 @@ def main():
                 filename = os.path.join(labels_dest, sound_name + f"_{i}.txt")
                 with open(filename, "w") as f:
                     for box in boxes:
-                        f.write(f"{box[0]} {box[1]} {box[2]}\n")
+                        f.write(f"{int(box[0])} {box[1]} {box[2]}\n")
 
 
 if __name__ == "__main__":

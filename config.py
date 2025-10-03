@@ -3,6 +3,8 @@ import torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # for spectrograms
+# if you change these two, you should consider
+# changing IMAGE_SIZE as well
 CLIP_LEN = 30   # length of a clip in seconds
 OVERLAP = 15    # overlap between clips
 # for fft and mel transform
@@ -11,6 +13,8 @@ HOP_LENGTH = 512
 N_FFT = 2048
 N_MELS = 128
 
+# the length of each spectrogram
+IMAGE_SIZE = 1248
 
 # for dataset
 
@@ -54,22 +58,16 @@ CLASSES = [
            "song"]
 
 NUM_CLASSES=len(CLASSES)
-IN_CHANNELS = 128
+IN_CHANNELS = N_MELS
 
-S = [13, 26, 52]
+S = [IMAGE_SIZE/32, IMAGE_SIZE/16, IMAGE_SIZE/8]
 
 # Got these anchors from the k_means script
 # They represent widths that are scaled to be
 # proportions of the image (so between 0 and 1)
 
-#ANCHORS = [
-#    [0.9634, 0.8620, 0.7547],
-#    [0.6250, 0.4963, 0.3926],
-#    [0.2919, 0.1747, 0.0756]
-#]
-
 ANCHORS = [
-    [0.9672, 0.8793, 0.7871],
-    [0.6872, 0.5913, 0.4842],
-    [0.3548, 0.2213, 0.0820]
+    [0.1808, 0.1286, 0.1072],
+    [0.0859, 0.0639, 0.0426],
+    [0.0198, 0.0155, 0.0116]
 ]
