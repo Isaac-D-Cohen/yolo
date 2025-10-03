@@ -114,7 +114,7 @@ if __name__ == "__main__":
         with open(fname, "r") as f:
             lines = f.readlines()
             for line in lines:
-                widths.append(float(line.strip('\n').split(' ')[1]))
+                widths.append(float(line.strip('\n').split(' ')[2]))
 
     points = torch.tensor(widths)
 
