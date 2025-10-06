@@ -111,16 +111,17 @@ def insert_box(yolo_box_map, clip_num, annotation, clip_len, step):
 
     # get the absolute time in the audio when a clip begins
     abs_clip_begin_time = clip_num*step
-    # when does the box begin within the clip?
-    box_begin_time = annotation[1]-abs_clip_begin_time
-    # when does the box end?
-    clip_end = abs_clip_begin_time + clip_len
+    # when does the clip end?
+    abs_clip_end_time = abs_clip_begin_time + clip_len
 
-    if annotation[2] <= clip_end:
-        box_end_time = annotation[2]-abs_clip_begin_time
-    else:
-        box_end_time = clip_len     # clip_end - abs_clip_begin_time
-        insert_box(yolo_box_map, clip_num+1, annotation, clip_len, step)
+
+    # when does the box begin within the clip?
+    # (don't worry if the annotation extends into a previous clip;
+    # we already took care of that outside this function call)
+    box_begin_time = max(0, annotation[1]-abs_clip_begin_time)
+
+    # when does the box end within the clip? (clip_len = clip_end - abs_clip_begin_time)
+    box_end_time = min(annotation[2]-abs_clip_begin_time, clip_len)
 
     # ok, now we need to normalize and find the center
     # so first normalize...
@@ -131,13 +132,31 @@ def insert_box(yolo_box_map, clip_num, annotation, clip_len, step):
     center_x = (box_begin_x+box_end_x)/2
     width = box_end_x - box_begin_x
 
-    # and... record it!
-    yolo_box = [annotation[0], center_x, width]
+    # One last thing before we record
+    # In order to:
+    # 1) prevent duplicate boxes in the same clip
+    # 2) allow us to later erase boxes (with their underlying
+    # parts of the clip) that straddle a clip boundary
+    # we want to record the beginning and end within this clip
+    # and the true length of the annotation box
+    true_len = annotation[2] - annotation[1]
+
+    # ok, let's package together all the info
+    current_box = [annotation[0], center_x, width, box_begin_time, box_end_time, true_len]
 
     if clip_num in yolo_box_map:
-        yolo_box_map[clip_num].append(yolo_box)
+        # since there are other boxes here already, we must search for duplicates
+        for box in yolo_box_map[clip_num]:
+            # if we found an identical box, defined as a box that starts and ends in the
+            # same place within this clip and has the same class, just return
+            if box[3] == current_box[3] and box[4] == current_box[4] and box[0] == current_box[0]:
+                return
+        # if we got here, record it!
+        yolo_box_map[clip_num].append(current_box)
     else:
-        yolo_box_map[clip_num] = [yolo_box]
+        # we can just put it in
+        yolo_box_map[clip_num] = [current_box]
+
 
 # function to produce labels
 def make_labels(annotations_filename, clip_len, step):
@@ -150,14 +169,66 @@ def make_labels(annotations_filename, clip_len, step):
 
         # there may be multiple clips going on right now (because of overlap)
         # so first order of business is to figure out which clip started most recently
-        time_begin = annotation[1]
-        clip_num = floor(time_begin/step)
+        # (before the end of our annotation)
+        _, time_begin, time_end = annotation
+        clip_num = floor(time_end/step)
 
+        # in each clip that ends after our this annotation starts
         while (clip_num*step + clip_len) > time_begin:
+            # we want to insert our annotation
             insert_box(yolo_box_map, clip_num, annotation, clip_len, step)
             clip_num -= 1
 
     return yolo_box_map
+
+# remove a box and the boxes that overlap with it
+# note: removing a box means clearing its associated audio
+# also note: these two functions are written like this because the list
+# may change significantly when we stop on an if statement and go down the
+# recursion rabbit hole
+def remove_box(spectrogram, boxes, box_to_remove):
+
+    _, _, _, box_begin_time, box_end_time, _ = box_to_remove
+
+    boxes.remove(box_to_remove)
+
+    # blank out area on spectrogram
+    box_begin_sample = int(box_begin_time*config.IMAGE_SIZE/config.CLIP_LEN)
+    box_end_sample = int(box_end_time*config.IMAGE_SIZE/config.CLIP_LEN)
+
+    # just in case
+    box_begin_sample = max(box_begin_sample, 0)
+    box_end_sample = min(box_end_sample, config.IMAGE_SIZE-1)
+
+    # zero it out
+    spectrogram[:, box_begin_sample:box_end_sample+1] = 0
+
+    # now we need to deal with the other boxes that overlap with this one
+    while True:
+        for other_box in boxes:
+            _, _, _, other_box_begin_time, other_box_end_time, _ = other_box
+
+            # if the other box overlaps with the one we just erased
+            if box_begin_time < other_box_end_time and box_end_time > other_box_begin_time:
+                remove_box(spectrogram, boxes, other_box)
+                break
+        else:
+            return
+
+# remove all boxes from this spectrogram that straddle its boundaries
+def remove_straddlers(spectrogram, boxes):
+
+    while True:
+        for box in boxes:
+            _, _, _, box_begin_time, box_end_time, true_len = box
+
+            # if the box's true length is longer than its time in this clip
+            if true_len > (box_end_time - box_begin_time):
+                remove_box(spectrogram, boxes, box)
+                break
+        else:
+            return
+
 
 
 def main():
@@ -209,11 +280,7 @@ def main():
             spectrogram = spectrograms[i]
 
             # shape goes from [1, 128, 416] to [128, 416]
-            spectrogram = spectrogram.view(128, config.IMAGE_SIZE)
-
-            # save the tensor
-            filename = os.path.join(images_dest, sound_name + f"_{i}.pt")
-            torch.save(spectrogram, filename)
+            spectrogram = spectrogram.view(config.N_MELS, config.IMAGE_SIZE)
 
             # if we're in train mode and we have labels for this clip
             if train_mode and i in yolo_box_map:
@@ -221,10 +288,18 @@ def main():
                 # save the bounding boxes
                 boxes = yolo_box_map[i]
 
-                filename = os.path.join(labels_dest, sound_name + f"_{i}.txt")
-                with open(filename, "w") as f:
-                    for box in boxes:
-                        f.write(f"{int(box[0])} {box[1]} {box[2]}\n")
+                remove_straddlers(spectrogram, boxes)
+
+                # after removing the straddlers and their overlappers we may not have any annotations left
+                if len(boxes) > 0:
+                    filename = os.path.join(labels_dest, sound_name + f"_{i}.txt")
+                    with open(filename, "w") as f:
+                        for box in boxes:
+                            f.write(f"{int(box[0])} {box[1]} {box[2]}\n")
+
+            # save the tensor
+            filename = os.path.join(images_dest, sound_name + f"_{i}.pt")
+            torch.save(spectrogram, filename)
 
 
 if __name__ == "__main__":
