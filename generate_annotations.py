@@ -12,8 +12,20 @@ def sliding_window_nms(annotations):
     if len(annotations) == 0:
         return []
 
-    boxes_begin = annotations[0][2]
-    boxes_end = annotations[-1][2]
+
+    # find begin time of earliest box and end time of latest one
+    # note: first annotation is not necessarily the first temporally
+    first_annotation = annotations[0]
+
+    # annotation has format class, confidence, x_center, width
+    _, _, x_center, width = first_annotation
+    boxes_begin = x_center - width/2
+    boxes_end = boxes_begin + width
+
+    for box in annotations:
+        _, _, x_center, width = box
+        boxes_begin = min(boxes_begin, x_center-width/2)
+        boxes_end = max(boxes_end, x_center+width/2)
 
     window_length = config.NMS_WINDOW_LENGTH
     window_begin = boxes_begin
@@ -74,9 +86,6 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
             [int(annotation[0]), float(annotation[1]), float(annotation[2]), float(annotation[3])]
                  for annotation in string_annotations]
 
-        # sort by start time
-        annotations.sort(key=lambda x: x[2])
-
         # perform non maximal suppression
         annotations = sliding_window_nms(annotations)
 
@@ -97,7 +106,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
 
             annotations[i] = [classes[class_label], x_begin, x_end, width]
 
-        # sort by start time again
+        # sort by start time
         annotations.sort(key=lambda x: x[1])
 
         for row_num, annotation in enumerate(annotations):
