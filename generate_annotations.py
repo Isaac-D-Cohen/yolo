@@ -6,6 +6,44 @@ from utils import non_max_suppression
 import config
 
 
+# annotations should be sorted by x value
+def sliding_window_nms(annotations):
+
+    if len(annotations) == 0:
+        return []
+
+    boxes_begin = annotations[0][2]
+    boxes_end = annotations[-1][2]
+
+    window_length = config.NMS_WINDOW_LENGTH
+    window_begin = boxes_begin
+    window_end = min(window_begin + window_length, boxes_end)
+    skip = window_length/2      # we'll just do skips of window_lenght/2 for now (in the future might be configurable)
+
+    while True:
+
+        annotations_in_window = []
+
+        for annotation in annotations:
+            if annotation[2] >= window_begin and annotation[2] <= window_end:
+                annotations_in_window.append(annotation)
+                annotations.remove(annotation)
+
+        annotations_in_window = non_max_suppression(annotations_in_window)
+
+        annotations += annotations_in_window
+
+
+        if window_end == boxes_end:
+            break
+
+        window_begin += skip
+        window_end = min(window_end + skip, boxes_end)
+
+    return annotations
+
+
+
 def generate_annotations(model_output_dir, model_output_list, annotations_output_dir, output_file_insertion):
 
     annotation_files = dict()
@@ -36,8 +74,11 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
             [int(annotation[0]), float(annotation[1]), float(annotation[2]), float(annotation[3])]
                  for annotation in string_annotations]
 
+        # sort by start time
+        annotations.sort(key=lambda x: x[2])
+
         # perform non maximal suppression
-        annotations = non_max_suppression(annotations)
+        annotations = sliding_window_nms(annotations)
 
         # format the annotations in preparation for turning them into Raven rows
         # convert x_center and width format to begin, end, width
@@ -56,7 +97,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
 
             annotations[i] = [classes[class_label], x_begin, x_end, width]
 
-        # sort by start time
+        # sort by start time again
         annotations.sort(key=lambda x: x[1])
 
         for row_num, annotation in enumerate(annotations):

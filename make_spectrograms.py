@@ -288,7 +288,8 @@ def main():
                 # save the bounding boxes
                 boxes = yolo_box_map[i]
 
-                remove_straddlers(spectrogram, boxes)
+                if config.REMOVE_STRADDLERS:
+                    remove_straddlers(spectrogram, boxes)
 
                 # after removing the straddlers and their overlappers we may not have any annotations left
                 if len(boxes) > 0:

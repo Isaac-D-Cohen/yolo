@@ -46,24 +46,34 @@ def main():
             end = start+clip_len
 
             # find all annotations within this window
-            start_before_end_of_window = all_annotations['End Time (s)'] > start
-            end_after_start_of_window = all_annotations['Begin Time (s)'] < end
-            subset_in_window = all_annotations[start_before_end_of_window & end_after_start_of_window]
+            end_after_start_of_window = all_annotations['End Time (s)'] > start
+            start_before_end_of_window = all_annotations['Begin Time (s)'] < end
+            subset_in_window = all_annotations[end_after_start_of_window & start_before_end_of_window]
 
-            # now truncate the ones that go over the edges of the window
+            # now what about the ones that go over the edges of the window?
             truncate_at_start = subset_in_window['Begin Time (s)'] < start
-            subset_in_window.loc[truncate_at_start, 'Begin Time (s)'] = start
             truncate_at_end = subset_in_window['End Time (s)'] > end
-            subset_in_window.loc[truncate_at_end, 'End Time (s)'] = end
 
-            deltas = subset_in_window['End Time (s)'] - subset_in_window['Begin Time (s)']
-            subset_in_window.loc[:, 'Delta Time (s)'] = deltas
+            # if REMOVE_STRADDLERS is enabled in the config, remove them
+            if config.REMOVE_STRADDLERS:
+                subset_in_window = subset_in_window[~(truncate_at_start | truncate_at_end)]
+            else:
+                # otherwise, truncate them
+                subset_in_window.loc[truncate_at_start, 'Begin Time (s)'] = start
+                subset_in_window.loc[truncate_at_end, 'End Time (s)'] = end
+
+                # fix deltas
+                deltas = subset_in_window['End Time (s)'] - subset_in_window['Begin Time (s)']
+                subset_in_window.loc[:, 'Delta Time (s)'] = deltas
 
             if output_df.empty:
                 output_df = subset_in_window
             else:
                 output_df = pd.concat([output_df, subset_in_window])
 
+        # remove duplicates before we output
+        # duplicate creep in because of spectrogram overlap
+        output_df = output_df.drop_duplicates()
 
         output_df.reset_index(drop=True, inplace=True)
         output_df.to_csv(sound_filename + '_' + filter_filename + '_annotations.txt', sep='\t', index=False)

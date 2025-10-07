@@ -13,6 +13,8 @@ HOP_LENGTH = 512
 N_FFT = 2048
 N_MELS = 128
 
+REMOVE_STRADDLERS = True
+
 # the length of each spectrogram
 IMAGE_SIZE = 1248
 
@@ -49,6 +51,8 @@ LAMBDA_BOX = 18
 PROBABILITY_THRESHOLD = .2
 NMS_IOU_THRESHOLD = 0.2
 
+# for generate_annotations
+NMS_WINDOW_LENGTH = 4*CLIP_LEN
 
 # threshold for a box to count as present in the other list
 AUTOGRADER_IOU_THRESHOLD = 0.5
