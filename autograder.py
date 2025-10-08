@@ -97,6 +97,11 @@ def main():
     ground_truth_df = load_annotations_df(argv[1])
     model_output_df = load_annotations_df(argv[2])
 
+    if len(argv) > 3 and argv[3] == "--silent":
+        show_diff = False
+    else:
+        show_diff = True
+
     if ground_truth_df is None or model_output_df is None:
         exit(1)
 
@@ -141,11 +146,11 @@ def main():
             print("There were no ground truth boxes in these audio clips, so recall is undefined.")
 
 
-        if num_pred != 0 and n1 != num_pred:
+        if num_pred != 0 and n1 != num_pred and show_diff:
             print("\n\nModel predictions that did not appear in ground truth data:\n")
             print(model_output_df[mo_mask][(model_boxes_that_correspond_to_gt_box == False).numpy()].to_string(index=False))
 
-        if num_gt != 0 and n2 != num_gt:
+        if num_gt != 0 and n2 != num_gt and show_diff:
             print("\n\nGround truth data that the model failed to predict:\n")
             print(ground_truth_df[gt_mask][(gt_that_model_predicted == False).numpy()].to_string(index=False))
 
