@@ -17,7 +17,7 @@ class YOLODataset(Dataset):
         img_dir,
         label_dir,
         anchors,
-        S=[13, 26, 52],
+        S,
     ):
 
         self.img_dir = img_dir
