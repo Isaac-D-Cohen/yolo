@@ -6,6 +6,56 @@ from utils import non_max_suppression
 import config
 
 
+# annotations should be sorted by x value
+def sliding_window_nms(annotations):
+
+    if len(annotations) == 0:
+        return []
+
+
+    # find begin time of earliest box and end time of latest one
+    # note: first annotation is not necessarily the first temporally
+    first_annotation = annotations[0]
+
+    # annotation has format class, confidence, x_center, width
+    _, _, x_center, width = first_annotation
+    boxes_begin = x_center - width/2
+    boxes_end = boxes_begin + width
+
+    for box in annotations:
+        _, _, x_center, width = box
+        boxes_begin = min(boxes_begin, x_center-width/2)
+        boxes_end = max(boxes_end, x_center+width/2)
+
+    window_length = config.NMS_WINDOW_LENGTH
+    window_begin = boxes_begin
+    window_end = min(window_begin + window_length, boxes_end)
+    skip = window_length/2      # we'll just do skips of window_lenght/2 for now (in the future might be configurable)
+
+    while True:
+
+        annotations_in_window = []
+
+        for annotation in annotations:
+            if annotation[2] >= window_begin and annotation[2] <= window_end:
+                annotations_in_window.append(annotation)
+                annotations.remove(annotation)
+
+        annotations_in_window = non_max_suppression(annotations_in_window)
+
+        annotations += annotations_in_window
+
+
+        if window_end == boxes_end:
+            break
+
+        window_begin += skip
+        window_end = min(window_end + skip, boxes_end)
+
+    return annotations
+
+
+
 def generate_annotations(model_output_dir, model_output_list, annotations_output_dir, output_file_insertion):
 
     annotation_files = dict()
@@ -37,7 +87,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
                  for annotation in string_annotations]
 
         # perform non maximal suppression
-        annotations = non_max_suppression(annotations)
+        annotations = sliding_window_nms(annotations)
 
         # format the annotations in preparation for turning them into Raven rows
         # convert x_center and width format to begin, end, width
