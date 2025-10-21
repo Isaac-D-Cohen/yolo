@@ -32,8 +32,7 @@ TRAIN_PORTION = 0.9
 
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
-# TODO remove this if we never end up using it
-WEIGHT_DECAY = 1e-4
+WEIGHT_DECAY = 1e-3
 
 # a minor epoch is just a run through all training data
 # a major epoch is MINOR_EPOCHS number of minor epochs

@@ -142,7 +142,7 @@ def main():
     loss_fn = YoloLoss()
 
     optimizer = optim.Adam(
-        model.parameters(), lr=config.LEARNING_RATE#, weight_decay=config.WEIGHT_DECAY
+        model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
     )
 
     # if the wants to start with a previous checkpoint, load it
