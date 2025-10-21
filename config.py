@@ -80,3 +80,7 @@ ANCHORS = [
     [0.1007, 0.0839, 0.0671],
     [0.0508, 0.0195, 0.0141]
 ]
+
+# for weights and biases website
+WANDB_ENTITY = "ecohen65-binghamton-university-binghamton-university"
+WANDB_PROJECT_NAME = "bird-yolo-project"

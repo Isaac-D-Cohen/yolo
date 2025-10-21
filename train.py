@@ -9,6 +9,8 @@ import argparse
 
 from tqdm import tqdm
 
+import wandb
+
 from model import YOLOv3
 from dataset import YOLODataset
 from loss import YoloLoss
@@ -48,20 +50,23 @@ def run_model(model, x, y, loss_fn, scaled_anchors):
     return out, loss
 
 
-def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, output_preds=False):
+def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, output_preds=False, wandb):
 
     torch.autograd.set_grad_enabled(False)
     model.eval()
 
-    # pull out all the data at once - no reason to batch for validation
-    loader = DataLoader(dataset=validation_set, batch_size=len(validation_set), shuffle=False)
+    loader = DataLoader(dataset=validation_set, batch_size=config.BATCH_SIZE, shuffle=False)
 
-    val_data = next(iter(loader))
-    x, y = val_data["img"], val_data["labels"]
+    for batch in iterator:
 
-    out, loss = run_model(model, x, y, loss_fn, scaled_anchors)
+        x, y = batch["img"], batch["labels"]
 
-    print(f"Loss: {loss}")
+        out, loss = run_model(model, x, y, loss_fn, scaled_anchors)
+
+        print(f"Loss: {loss}")
+
+        if wandb:
+            run.log({"loss": loss})
 
     if output_preds:
         idx = val_data["idx"]
@@ -72,7 +77,7 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
         write_predictions(out, scaled_anchors, spec_names)
 
 
-def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent=False):
+def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent=False, wandb):
 
     torch.autograd.set_grad_enabled(True)
     model.train()
@@ -94,8 +99,13 @@ def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, s
         optimizer.step()
         optimizer.zero_grad()
 
+        loss = loss.detach()
+
         if silent == False:
-            print(f"Loss: {loss.detach()}")
+            print(f"Loss: {loss}")
+
+        if wandb:
+            run.log({"loss": loss})
 
 
 
@@ -105,6 +115,7 @@ def main():
     parser.add_argument("--start-with", "-s", metavar="<checkpoint_name>", help="Start with a previous checkpoint and continue training from there")
     parser.add_argument("--silent", action="store_true", help="Don't output the loss during training", default=False)
     parser.add_argument("--no-output-preds", action="store_true", help="Don't output the predictions for the validation data on the final round", default=False)
+    parser.add_argument("--wandb", action="store_true", help="Enable logging via Weights and Biases (Note: You need to be logged in to wandb for this to work)", default=False)
     args = parser.parse_args()
 
     # setup the checkpoint directory
@@ -139,7 +150,7 @@ def main():
 
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
 
-    loss_fn = YoloLoss()
+    loss_fn = YoloLoss().to(config.DEVICE)
 
     optimizer = optim.Adam(
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
@@ -158,11 +169,22 @@ def main():
 
     output_preds = not args.no_output_preds
 
+    if args.wandb:
+
+        config_dict = {k: v for k, v in vars(config).items() if k.isupper() and not k.startswith('_')}
+
+        run = wandb.init(
+            entity=config.WANDB_ENTITY,
+            project=config.WANDB_PROJECT_NAME,
+            config=config_dict
+        )
+
+
     for major_epoch in range(config.MAJOR_EPOCHS):
         for _ in range(config.MINOR_EPOCHS):
-            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent)
+            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent, args.wandb)
 
-        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds))
+        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds), args.wandb)
 
     save_checkpoint(checkpoint_dir_path, checkpoint_name, model, optimizer)
 
