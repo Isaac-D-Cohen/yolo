@@ -50,7 +50,7 @@ def run_model(model, x, y, loss_fn, scaled_anchors):
     return out, loss
 
 
-def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, output_preds=False, wandb):
+def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, output_preds=False, wandb, epoch):
 
     torch.autograd.set_grad_enabled(False)
     model.eval()
@@ -66,7 +66,7 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
         print(f"Loss: {loss}")
 
         if wandb:
-            run.log({"loss": loss})
+            run.log({"epoch": epoch, "val_loss": loss})
 
     if output_preds:
         idx = val_data["idx"]
@@ -77,7 +77,7 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
         write_predictions(out, scaled_anchors, spec_names)
 
 
-def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent=False, wandb):
+def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent=False, wandb, epoch):
 
     torch.autograd.set_grad_enabled(True)
     model.train()
@@ -105,7 +105,7 @@ def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, s
             print(f"Loss: {loss}")
 
         if wandb:
-            run.log({"loss": loss})
+            run.log({"epoch": epoch, "train_loss": loss})
 
 
 
@@ -156,7 +156,7 @@ def main():
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
     )
 
-    # if the wants to start with a previous checkpoint, load it
+    # if the user wants to start with a previous checkpoint, load it
     if args.start_with != None:
         ld_checkpoint_name = args.start_with
         ld_checkpoint_path = os.path.join("checkpoints", ld_checkpoint_name)
@@ -176,18 +176,24 @@ def main():
         run = wandb.init(
             entity=config.WANDB_ENTITY,
             project=config.WANDB_PROJECT_NAME,
+            name=checkpoint_name,
             config=config_dict
         )
 
 
     for major_epoch in range(config.MAJOR_EPOCHS):
-        for _ in range(config.MINOR_EPOCHS):
-            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent, args.wandb)
+        for minor_epoch in range(config.MINOR_EPOCHS):
+            epoch = major_epoch*config.MINOR_EPOCHS + minor_epoch
+            train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent, args.wandb, epoch)
 
-        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds), args.wandb)
+        epoch = major_epoch*config.MINOR_EPOCHS
+        validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds), args.wandb, epoch)
 
     save_checkpoint(checkpoint_dir_path, checkpoint_name, model, optimizer)
 
+
+    if args.wandb:
+        run.finish()
 
 
 if __name__ == "__main__":
