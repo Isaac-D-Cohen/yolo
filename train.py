@@ -68,13 +68,13 @@ def validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, outp
         if wandb:
             wandb_run.log({"epoch": epoch, "val_loss": loss})
 
-    if output_preds:
-        idx = val_data["idx"]
-        spec_names = []
-        for i in idx:
-            spec_names.append(dataset.get_spect_name(i))
+        if output_preds:
+            idx = batch["idx"]
+            spec_names = []
+            for i in idx:
+                spec_names.append(dataset.get_spect_name(i))
 
-        write_predictions(out, scaled_anchors, spec_names)
+            write_predictions(out, scaled_anchors, spec_names)
 
 
 def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, silent, wandb, wandb_run, epoch):
