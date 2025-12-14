@@ -7,11 +7,11 @@ from sys import argv
 from tqdm import tqdm
 
 from model import YOLOv3
-from utils import write_predictions, load_checkpoint, get_latest_checkpoint_number
+from utils import write_predictions, load_checkpoint, get_latest_checkpoint_number, clear_outputs, ensure_dir_exists
 
 # a dataset class just to just load spectrograms
 class InputDataset(Dataset):
-    def __init__(self, input_dir="inputs"):
+    def __init__(self, input_dir):
 
         self.input_dir = input_dir
         self.image_filenames = os.listdir(input_dir)
@@ -36,23 +36,12 @@ class InputDataset(Dataset):
         return img_filename[:-3]
 
 
-
-def clear_outputs():
-
-    output_dir = "outputs"
-
-    for filename in os.listdir(output_dir):
-        p = os.path.join(output_dir, filename)
-        os.remove(p)
-
-def main():
-
-    if len(argv) > 1:
-        checkpoint_name = argv[1]
-    else:
-        checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"
+def predict(checkpoint_name, checkpoint_dir_path):
 
     clear_outputs()
+
+    input_dir = config.INFERENCE_IMAGES
+    ensure_dir_exists(input_dir)
 
     torch.autograd.set_grad_enabled(False)
 
@@ -64,11 +53,9 @@ def main():
     ).to(config.DEVICE)
 
 
-    dataset = InputDataset()
+    dataset = InputDataset(input_dir)
     loader = DataLoader(dataset=dataset, batch_size=config.BATCH_SIZE)
     model = YOLOv3(in_channels=config.IN_CHANNELS, num_classes=config.NUM_CLASSES).to(config.DEVICE)
-
-    checkpoint_dir_path = os.path.join("checkpoints", checkpoint_name)
 
     load_checkpoint(checkpoint_dir_path, checkpoint_name, model)
 
@@ -88,6 +75,18 @@ def main():
             spec_names.append(dataset.get_spect_name(i))
 
         write_predictions(preds, scaled_anchors, spec_names)
+
+
+def main():
+
+    if len(argv) > 1:
+        checkpoint_name = argv[1]
+    else:
+        checkpoint_name = f"checkpoint{get_latest_checkpoint_number()}"
+
+    checkpoint_dir_path = os.path.join(config.CHECKPOINTS, checkpoint_name)
+
+    predict(checkpoint_name, checkpoint_dir_path)
 
 
 if __name__ == "__main__":

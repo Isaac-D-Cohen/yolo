@@ -15,7 +15,7 @@ import wandb
 from model import YOLOv3
 from dataset import YOLODataset
 from loss import YoloLoss
-from utils import write_predictions, save_checkpoint, load_checkpoint, get_latest_checkpoint_number
+from utils import write_predictions, save_checkpoint, load_checkpoint, get_latest_checkpoint_number, clear_outputs, ensure_dir_exists
 
 
 def save_set_names(dataset, subset, filename):
@@ -126,18 +126,21 @@ def main():
     # setup the checkpoint directory
     checkpoint_number = get_latest_checkpoint_number()+1
     checkpoint_name = f"checkpoint{checkpoint_number}"
-    checkpoint_dir_path = os.path.join("checkpoints", checkpoint_name)
-    os.mkdir(checkpoint_dir_path)
+    checkpoint_dir_path = os.path.join(config.CHECKPOINTS, checkpoint_name)
+    os.makedirs(checkpoint_dir_path, exist_ok=True)
 
     # copy our config file to the checkpoint folder for future reference
     copyfile("config.py", os.path.join(checkpoint_dir_path, "config.py"))
 
     anchors = config.ANCHORS
 
-    datadir = "data"
+    datadir = config.TRAINING_DIR
 
-    images_dir = os.path.join(datadir, "images")
-    labels_dir = os.path.join(datadir, "labels")
+    images_dir = os.path.join(datadir, config.TRAINING_IMAGES)
+    labels_dir = os.path.join(datadir, config.TRAINING_LABELS)
+
+    ensure_dir_exists(images_dir)
+    ensure_dir_exists(labels_dir)
 
     dataset = YOLODataset(
         images_dir,

@@ -87,6 +87,16 @@ def get_spec_number(spec_name):
     return int(spec_name[index_before_number+1:])
 
 
+def clear_outputs():
+
+    output_dir = config.INFERENCE_OUTPUTS
+    os.makedirs(output_dir, exist_ok=True)
+
+    for filename in os.listdir(output_dir):
+        p = os.path.join(output_dir, filename)
+        os.remove(p)
+
+
 # predictions is a list of tensors each holding the outputs for an entire batch for one scale
 # shape of each item in the list is [batch_size, anchors_per_scale, S, 3+C]
 # anchors is a tensor containing the anchors for each scale. shape is [num_scales, anchors_per_scale]
@@ -148,7 +158,7 @@ def write_predictions(predictions, scaled_anchors, spec_names, is_preds=True):
                         # record in the list for this clip (that's what bboxes[i] indexes)
                         bboxes[i].append([class_label, confidence_x_iou, x_center, width])
 
-    outputs_dir = "outputs"
+    outputs_dir = config.INFERENCE_OUTPUTS
     # ok, now it's time to remove all the extra bounding boxes with non maximal suppression
     # and record the remaining ones in txt files
     # remember that bboxes has shape [batch_size, detections_in_this_clip, 4]
@@ -193,6 +203,12 @@ def get_latest_checkpoint_number():
     chkpts.sort()
 
     return chkpts[-1]
+
+
+def ensure_dir_exists(dir_name):
+    if not os.path.isdir(dir_name):
+        print(f"Error: {dir_name} doesn't exist.")
+        exit(1)
 
 
 def save_checkpoint(path, checkpoint_name, model, optimizer):

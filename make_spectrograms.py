@@ -4,6 +4,7 @@ import torchaudio.transforms as tr
 import torch.nn.functional as F
 
 import config
+from utils import ensure_dir_exists
 
 import pandas as pd
 
@@ -22,13 +23,6 @@ the spectrograms in data/images and the labels in data/labels.
 
 Note: This code is largely based on the spectrograms notebook.
 """
-
-def ensure_dirs_exist(tuple_of_dir_names):
-
-    for dir_name in tuple_of_dir_names:
-        if not os.path.isdir(dir_name):
-            print(f"Error: {dir_name} doesn't exist.")
-            exit(1)
 
 # read a Raven annotations file and return a list of lists where each inner list
 # represents a box and is in the format [class_index, begin, end]
@@ -54,11 +48,11 @@ def make_spectrograms(audio_filename, clip_len, step):
 
     samples_per_clip = clip_len*sample_rate
 
-    # is this sound file under the length of one clip (10 seconds)?
+    # is this sound file under the length of one clip (eg. 30 seconds)?
     # how many samples short are we?
     samples_short = samples_per_clip - waveform.shape[1]
 
-    # if we are under 10 seconds, add some silence as filler
+    # if we are under 30 seconds, add some silence as filler
     if samples_short > 0:
         silence_tensor = torch.zeros((1, samples_short))
         waveform = torch.cat((waveform, silence_tensor), dim=1)
@@ -249,17 +243,25 @@ def main():
     overlap = config.OVERLAP
     step = clip_len-overlap
 
-    images_src = os.path.join("audio", argv[2])
-    ensure_dirs_exist((images_src,))
+    # some directories must already exist (eg. audio, annotations)
+    # but others can be created now (eg. data/images, inputs)
+
+    images_src = os.path.join(config.DEFAULT_AUDIO_INPUTS, argv[2])
+    ensure_dir_exists(images_src)
 
     if train_mode:
-        labels_src = os.path.join("annotations", argv[2])
-        images_dest = os.path.join("data", "images")
-        labels_dest = os.path.join("data", "labels")
-        ensure_dirs_exist((labels_src, images_dest, labels_dest))
+        labels_src = os.path.join(config.DEFAULT_ANNOTATIONS_INPUTS, argv[2])
+        ensure_dir_exists(labels_src)
+
+        images_dest = os.path.join(config.TRAINING_DIR, config.TRAINING_IMAGES)
+        labels_dest = os.path.join(config.TRAINING_DIR, config.TRAINING_LABELS)
+
+        os.makedirs(images_dest, exist_ok=True)
+        os.makedirs(labels_dest, exist_ok=True)
+
     else:
-        images_dest = "inputs"
-        ensure_dirs_exist((images_dest,))
+        images_dest = config.INFERENCE_IMAGES
+        os.makedirs(images_dest, exist_ok=True)
 
     wav_files = os.listdir(images_src)
 
