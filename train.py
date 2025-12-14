@@ -100,7 +100,7 @@ def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, s
         loss.backward()
 
         # clip the gradients so they can't get too big
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.MAX_NORM)
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.MAX_NORM)
 
         optimizer.step()
 

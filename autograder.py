@@ -90,7 +90,7 @@ def compare_boxes(gt_bboxes, pred_bboxes):
 def main():
 
     if len(argv) < 3:
-        print(f"Format: {argv[0]}\t<ground_truth_annotations>\t<model_output_annotations>")
+        print(f"Format: {argv[0]}\t<ground_truth_annotations>\t<model_output_annotations> [--silent]")
         exit(0)
 
     # load the annotations
