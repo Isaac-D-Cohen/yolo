@@ -15,7 +15,7 @@ import wandb
 from model import YOLOv3
 from dataset import YOLODataset
 from loss import YoloLoss
-from utils import write_predictions, save_checkpoint, load_checkpoint, get_latest_checkpoint_number, clear_outputs, ensure_dir_exists
+from utils import write_predictions, save_checkpoint, load_checkpoint, get_latest_checkpoint_number, clear_dir, ensure_dir_exists
 
 
 def save_set_names(dataset, subset, filename):
@@ -141,6 +141,8 @@ def main():
 
     ensure_dir_exists(images_dir)
     ensure_dir_exists(labels_dir)
+
+    clear_dir(config.INFERENCE_OUTPUTS)
 
     dataset = YOLODataset(
         images_dir,

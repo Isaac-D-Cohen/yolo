@@ -87,13 +87,12 @@ def get_spec_number(spec_name):
     return int(spec_name[index_before_number+1:])
 
 
-def clear_outputs():
+def clear_dir(dirname):
 
-    output_dir = config.INFERENCE_OUTPUTS
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(dirname, exist_ok=True)
 
-    for filename in os.listdir(output_dir):
-        p = os.path.join(output_dir, filename)
+    for filename in os.listdir(dirname):
+        p = os.path.join(dirname, filename)
         os.remove(p)
 
 

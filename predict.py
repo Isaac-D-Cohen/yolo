@@ -7,7 +7,7 @@ from sys import argv
 from tqdm import tqdm
 
 from model import YOLOv3
-from utils import write_predictions, load_checkpoint, get_latest_checkpoint_number, clear_outputs, ensure_dir_exists
+from utils import write_predictions, load_checkpoint, get_latest_checkpoint_number, clear_dir, ensure_dir_exists
 
 # a dataset class just to just load spectrograms
 class InputDataset(Dataset):
@@ -38,7 +38,7 @@ class InputDataset(Dataset):
 
 def predict(checkpoint_name, checkpoint_dir_path):
 
-    clear_outputs()
+    clear_dir(config.INFERENCE_OUTPUTS)
 
     input_dir = config.INFERENCE_IMAGES
     ensure_dir_exists(input_dir)

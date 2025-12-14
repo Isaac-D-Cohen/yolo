@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog
 
-from utils import ensure_dir_exists
+from utils import ensure_dir_exists, clear_dir
 from make_spectrograms import make_spectrograms
 from predict import predict
 from generate_annotations import generate_annotations
@@ -45,8 +45,8 @@ def run():
     inference_input = config.INFERENCE_IMAGES
     inference_output = config.INFERENCE_OUTPUTS
 
-    os.makedirs(inference_input, exist_ok=True)
-    os.makedirs(inference_output, exist_ok=True)
+    clear_dir(inference_input)
+    clear_dir(inference_output)
 
     # ok, step 1: make the spectrograms!
 
