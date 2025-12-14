@@ -85,6 +85,17 @@ ANCHORS = [
     [0.0508, 0.0195, 0.0141]
 ]
 
+
+# directory names
+DEFAULT_AUDIO_INPUTS = "audio"
+DEFAULT_ANNOTATIONS_INPUTS = "annotations"
+TRAINING_DIR = "data"
+TRAINING_IMAGES = "images"
+TRAINING_LABELS = "labels"
+INFERENCE_IMAGES = "inputs"
+INFERENCE_OUTPUTS = "outputs"
+CHECKPOINTS = "checkpoints"
+
 # for weights and biases website
 WANDB_ENTITY = "ecohen65-binghamton-university-binghamton-university"
 WANDB_PROJECT_NAME = "bird-yolo-project"
