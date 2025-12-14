@@ -2,7 +2,6 @@
 import config
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader, random_split
 import os
 from shutil import copyfile
@@ -99,9 +98,6 @@ def train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, s
         optimizer.zero_grad()
         loss.backward()
 
-        # clip the gradients so they can't get too big
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.MAX_NORM)
-
         optimizer.step()
 
         loss = loss.detach()
@@ -166,10 +162,6 @@ def main():
         model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY
     )
 
-    # setup cosine annealing
-    total_num_epochs = config.MAJOR_EPOCHS*config.MINOR_EPOCHS
-    lr_scheduler = CosineAnnealingLR(optimizer, T_max=total_num_epochs, eta_min=config.MIN_LEARNING_RATE_AT_END)
-
     # if the user wants to start with a previous checkpoint, load it
     if args.start_with != None:
         ld_checkpoint_name = args.start_with
@@ -201,7 +193,6 @@ def main():
         for minor_epoch in range(config.MINOR_EPOCHS):
             epoch = major_epoch*config.MINOR_EPOCHS + minor_epoch
             train_model(model, dataset, train_set, loss_fn, optimizer, scaled_anchors, args.silent, args.wandb, run, epoch)
-            lr_scheduler.step()
 
         epoch = major_epoch*config.MINOR_EPOCHS
         validate_model(model, dataset, validation_set, loss_fn, scaled_anchors, (major_epoch == config.MAJOR_EPOCHS-1 and output_preds), args.wandb, run, epoch)

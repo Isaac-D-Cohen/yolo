@@ -33,10 +33,6 @@ TRAIN_PORTION = 0.9
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-4
-# for cosine annealing
-MIN_LEARNING_RATE_AT_END = 1e-6
-# for gradient clipping
-MAX_NORM = 10.0
 
 # a minor epoch is just a run through all training data
 # a major epoch is MINOR_EPOCHS number of minor epochs
