@@ -123,7 +123,7 @@ def generate_annotations(model_output_dir, model_output_list, annotations_output
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-output-dir", help="Directory with output files from the model", default="outputs")
+    parser.add_argument("--model-output-dir", help="Directory with output files from the model", default=config.INFERENCE_OUTPUTS)
     parser.add_argument("--model-output-list", help="If provided the script will use only spectrograms from this text file to make the annotations file")
     parser.add_argument("--annotations-output-dir", help="If provided the script will output the annotations file to this directory")
     args = parser.parse_args()
