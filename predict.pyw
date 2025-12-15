@@ -1,10 +1,13 @@
 import tkinter as tk
 from tkinter import filedialog
+import os
+import torch
 
 from utils import ensure_dir_exists, clear_dir
 from make_spectrograms import make_spectrograms
 from predict import predict
 from generate_annotations import generate_annotations
+import config
 
 # create textbox/entry objects
 entry_select_chkpt = None
@@ -59,11 +62,13 @@ def run():
         spectrograms = make_spectrograms(audio_file, clip_len, step)
 
         # remove the .wav
-        sound_name = audio_file[:-4]
+        sound_name = os.path.basename(audio_file[:-4])
 
-        # save the tensor
-        filename = os.path.join(inference_input, sound_name + f"_{i}.pt")
-        torch.save(spectrogram, filename)
+        # save the tensors one by one
+        for i, spectrogram in enumerate(spectrograms):
+            spectrogram = spectrogram.view(config.N_MELS, config.IMAGE_SIZE)
+            filename = os.path.join(inference_input, sound_name + f"_{i}.pt")
+            torch.save(spectrogram, filename)
 
     # step 2: make the predictions
     checkpoint_filename = checkpoint_filename[:-8]
